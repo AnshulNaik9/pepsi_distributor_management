@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import { Truck, ShieldCheck, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
@@ -25,8 +24,8 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-          <Link href="/admin">
-            <Card className="p-8 border-2 border-transparent hover:border-primary/20 hover:shadow-xl hover:shadow-primary/10 cursor-pointer transition-all duration-300 group hover:-translate-y-1 bg-white/80 backdrop-blur">
+          <a href="/admin" className="block group">
+            <Card className="p-8 border-2 border-transparent hover:border-primary/20 hover:shadow-xl hover:shadow-primary/10 cursor-pointer transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur">
               <div className="w-16 h-16 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <ShieldCheck className="w-8 h-8" />
               </div>
@@ -36,10 +35,10 @@ export default function Home() {
                 Enter Office <ArrowRight className="w-5 h-5 ml-1" />
               </div>
             </Card>
-          </Link>
+          </a>
 
-          <Link href="/driver/select">
-            <Card className="p-8 border-2 border-transparent hover:border-accent/20 hover:shadow-xl hover:shadow-accent/10 cursor-pointer transition-all duration-300 group hover:-translate-y-1 bg-white/80 backdrop-blur">
+          <a href="/driver/select" className="block group">
+            <Card className="p-8 border-2 border-transparent hover:border-accent/20 hover:shadow-xl hover:shadow-accent/10 cursor-pointer transition-all duration-300 hover:-translate-y-1 bg-white/80 backdrop-blur">
               <div className="w-16 h-16 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Truck className="w-8 h-8" />
               </div>
@@ -49,7 +48,7 @@ export default function Home() {
                 Start Route <ArrowRight className="w-5 h-5 ml-1" />
               </div>
             </Card>
-          </Link>
+          </a>
         </div>
       </div>
     </div>

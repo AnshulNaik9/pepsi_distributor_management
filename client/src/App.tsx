@@ -19,40 +19,40 @@ import DriverBilling from "@/pages/driver/billing";
 import DriverInventory from "@/pages/driver/inventory";
 import DriverExpenses from "@/pages/driver/expenses";
 
-function AdminRouter() {
-  return (
-    <AdminLayout>
-      <Switch>
-        <Route path="/admin" component={AdminDashboard} />
-        <Route path="/admin/products" component={AdminProducts} />
-        <Route path="/admin/stock" component={AdminStock} />
-        <Route path="/admin/trucks" component={AdminTrucks} />
-        <Route path="/admin/*" component={() => <div className="p-8 text-center text-muted-foreground text-xl font-bold">Coming Soon (Customers, Offers, Orders)</div>} />
-      </Switch>
-    </AdminLayout>
-  );
-}
-
-function DriverRouter() {
-  return (
-    <DriverLayout>
-      <Switch>
-        <Route path="/driver/billing" component={DriverBilling} />
-        <Route path="/driver/stock" component={DriverInventory} />
-        <Route path="/driver/expenses" component={DriverExpenses} />
-        <Route path="/driver/*" component={DriverBilling} />
-      </Switch>
-    </DriverLayout>
-  );
-}
-
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin/products">
+        {() => <AdminLayout><AdminProducts /></AdminLayout>}
+      </Route>
+      <Route path="/admin/stock">
+        {() => <AdminLayout><AdminStock /></AdminLayout>}
+      </Route>
+      <Route path="/admin/trucks">
+        {() => <AdminLayout><AdminTrucks /></AdminLayout>}
+      </Route>
+      <Route path="/admin">
+        {() => <AdminLayout><AdminDashboard /></AdminLayout>}
+      </Route>
+      
+      {/* Driver Routes */}
       <Route path="/driver/select" component={DriverSelect} />
-      <Route path="/admin*" component={AdminRouter} />
-      <Route path="/driver*" component={DriverRouter} />
+      <Route path="/driver/billing">
+        {() => <DriverLayout><DriverBilling /></DriverLayout>}
+      </Route>
+      <Route path="/driver/stock">
+        {() => <DriverLayout><DriverInventory /></DriverLayout>}
+      </Route>
+      <Route path="/driver/expenses">
+        {() => <DriverLayout><DriverExpenses /></DriverLayout>}
+      </Route>
+      <Route path="/driver">
+        {() => <DriverLayout><DriverBilling /></DriverLayout>}
+      </Route>
+      
       <Route component={NotFound} />
     </Switch>
   );

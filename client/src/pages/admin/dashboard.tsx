@@ -1,10 +1,12 @@
 import { useOrders } from "@/hooks/use-sales";
 import { useProducts, useGodownStock } from "@/hooks/use-inventory";
 import { Card } from "@/components/ui/card";
-import { Package, TrendingUp, IndianRupee, Truck } from "lucide-react";
+import { Package, TrendingUp, IndianRupee, Truck, ArrowRight } from "lucide-react";
+import { useLocation } from "wouter";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
+  const [, setLocation] = useLocation();
   const { data: orders = [] } = useOrders();
   const { data: products = [] } = useProducts();
   const { data: stock = [] } = useGodownStock();
@@ -35,6 +37,31 @@ export default function AdminDashboard() {
         <MetricCard title="Total Orders" value={orders.length.toString()} icon={TrendingUp} color="text-blue-500" bg="bg-blue-100" />
         <MetricCard title="Products Active" value={products.length.toString()} icon={Package} color="text-indigo-500" bg="bg-indigo-100" />
         <MetricCard title="Godown Stock" value={`${totalStock} cases`} icon={Truck} color="text-amber-500" bg="bg-amber-100" />
+      </div>
+
+      {/* Quick Access Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card onClick={() => setLocation("/admin/products")} className="p-6 border-border/40 shadow-sm hover:shadow-md transition-all hover:border-primary/30 rounded-2xl cursor-pointer group">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Package className="w-5 h-5" />
+            </div>
+            <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
+          <h4 className="text-lg font-bold text-foreground mb-1">Manage Products</h4>
+          <p className="text-sm text-muted-foreground">View and add all product varieties to your catalog</p>
+        </Card>
+
+        <Card onClick={() => setLocation("/admin/stock")} className="p-6 border-border/40 shadow-sm hover:shadow-md transition-all hover:border-primary/30 rounded-2xl cursor-pointer group">
+          <div className="flex items-start justify-between mb-4">
+            <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Truck className="w-5 h-5" />
+            </div>
+            <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
+          <h4 className="text-lg font-bold text-foreground mb-1">Godown Stock</h4>
+          <p className="text-sm text-muted-foreground">Track and update inventory in the warehouse</p>
+        </Card>
       </div>
 
       <Card className="p-6 border-border/50 shadow-lg shadow-black/5 rounded-2xl">
