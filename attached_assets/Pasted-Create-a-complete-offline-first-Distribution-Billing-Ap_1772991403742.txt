@@ -1,0 +1,243 @@
+Create a **complete offline-first Distribution Billing Application** for a beverage distributor (Pepsi distribution model). The system must work smoothly for both office staff and delivery drivers. The application should prioritize **speed, simplicity, and reliability**, especially for mobile spot billing.
+
+SYSTEM STRUCTURE
+The system must contain two main parts:
+
+1. **Admin Panel (Office / Laptop Application)**
+2. **Mobile Delivery Application (Android for drivers)**
+
+The entire system should support **offline operation using a local database (SQLite)** and optionally sync later if internet is available.
+
+---
+
+ADMIN PANEL FEATURES (OFFICE)
+
+1. GODOWN STOCK MANAGEMENT
+
+* Add stock received from the company.
+* Track stock by product and cases/pieces.
+* View total available stock in the warehouse.
+
+Example stock view:
+Product | Cases Available
+Pepsi 2.25L | 120
+7UP 2.25L | 80
+Aquafina | 150
+
+2. TRUCK LOADING SYSTEM
+   Before delivery, load stock into a specific vehicle.
+
+Example:
+Truck: KA19 AB 1234
+Pepsi 2.25L – 40 cases
+7UP – 25 cases
+Aquafina – 30 cases
+
+When loading:
+
+* Godown stock must decrease
+* Truck stock must increase
+
+3. CUSTOMER MANAGEMENT
+   Maintain a list of shops/customers.
+
+Fields:
+
+* Customer name
+* Phone number
+* Route
+* Credit balance
+* Address
+
+4. ROUTE MANAGEMENT
+   Group customers into routes for faster delivery.
+
+Example:
+Route A
+
+* Sai Stores
+* Ganesh Traders
+* Krishna Bakery
+
+Drivers will select a route before delivery.
+
+5. OFFER / SCHEME MANAGEMENT
+   Allow admin to create promotional schemes.
+
+Example:
+Buy 1 Pepsi 2.25L Case
+Get 2 Aquafina Bottles FREE
+
+Fields:
+
+* Product
+* Buy quantity
+* Free product
+* Free quantity
+* Start date
+* End date
+
+The system must automatically apply offers during billing.
+
+6. REPORTS
+   Generate reports including:
+
+* Daily sales
+* Product sales
+* Driver collections
+* Credit outstanding
+* Stock movement
+* Expense reports
+
+---
+
+MOBILE DELIVERY APPLICATION (ANDROID)
+
+1. ROUTE SELECTION
+   Driver selects a route before starting delivery.
+   The system shows all customers in that route.
+
+2. SPOT BILLING INTERFACE (VERY FAST UI)
+
+The billing screen should show **large product image buttons** with quantity controls.
+
+Example layout:
+
+Product Image
+Product Name
+Quantity controls: [-] [ + ]
+
+Driver taps "+" to add quantity.
+
+Cart should show selected items and total bill.
+
+3. AUTOMATIC OFFER APPLICATION
+
+If an offer exists, the system must automatically apply it.
+
+Example:
+
+If customer buys:
+Pepsi 2.25L Case ×2
+
+Offer:
+Buy 1 → Get 2 Aquafina Free
+
+System automatically adds:
+Aquafina Bottle ×4 FREE
+
+Free items must also reduce stock.
+
+4. PAYMENT MODE SELECTION
+
+After generating a bill, the driver must select payment mode.
+
+Options:
+
+* Cash
+* UPI
+* Credit
+* Bank Transfer (optional)
+
+The payment mode must be stored in the order record.
+
+5. BILL PRINTING
+
+Support Bluetooth thermal printer printing.
+
+Bill should show:
+Distributor name
+Customer name
+Date
+Items purchased
+Free items clearly marked as FREE
+Total amount
+Payment mode
+
+6. TRUCK STOCK TRACKING
+
+The driver should be able to see remaining stock in the truck.
+
+Example:
+Pepsi 2.25L – 32
+7UP – 15
+Aquafina – 20
+
+Stock must automatically reduce after every sale.
+
+7. RETURN STOCK SYSTEM
+
+At the end of the day the driver records unsold stock returning to the godown.
+
+Example:
+Pepsi – 6
+7UP – 3
+
+This should increase godown stock again.
+
+8. DAILY EXPENSE ENTRY
+
+Drivers should record daily expenses such as:
+
+* Fuel
+* Food
+* Toll
+
+These should appear in end-of-day reports.
+
+9. DRIVER END OF DAY SETTLEMENT
+
+Example output:
+
+Driver: Ramesh
+
+Total Sales: ₹31,940
+Cash: ₹18,200
+UPI: ₹9,540
+Credit: ₹4,200
+
+Expenses: ₹2,450
+
+Cash to submit: ₹15,750
+
+10. REPEAT LAST ORDER FEATURE
+
+Many shops repeat the same orders daily.
+Allow drivers to select “Repeat Last Order” to quickly add previous items.
+
+---
+
+DATABASE STRUCTURE
+
+Tables required:
+
+Products
+Customers
+Routes
+Orders
+OrderItems
+Offers
+TruckStock
+GodownStock
+Expenses
+Payments
+
+---
+
+TECHNICAL REQUIREMENTS
+
+* Mobile app: Android
+* Offline-first architecture
+* Local database: SQLite
+* Image-based product UI
+* Bluetooth thermal printer support
+* Fast response UI suitable for delivery drivers
+* Clean and simple user interface
+
+---
+
+GOAL
+
+Build a fast, reliable distribution billing system that manages:
+
+Godown Stock → Truck Loading → Delivery Billing → Offer Application → Payment Tracking → Stock Returns → Expense Tracking → Daily Reports.
