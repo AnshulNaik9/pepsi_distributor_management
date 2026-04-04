@@ -1,41 +1,57 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const products = pgTable("products", {
-  id: serial("id").primaryKey(),
+/** Product size / catalog section */
+export const productCategoryValues = [
+  "2_25_ltr",
+  "1_ltr",
+  "750_ml",
+  "400_ml",
+  "others",
+] as const;
+export type ProductCategory = (typeof productCategoryValues)[number];
+export const productCategorySchema = z.enum(productCategoryValues);
+
+export const products = sqliteTable("products", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   imageUrl: text("image_url"),
-  price: integer("price").notNull(), // Amount in rupees
+  price: integer("price").notNull(), // Per case
+  unit: text("unit").notNull().default("ltr"), // 'ltr' or 'ml'
+  quantityPerUnit: text("quantity_per_unit").notNull().default("1"), // e.g. "2.25"
+  itemsPerCase: integer("items_per_case").notNull().default(1), // 1 case = X items
+  category: text("category").notNull().default("others"),
+  purchasePrice: integer("purchase_price").notNull().default(0), // Cost price per case
 });
 
-export const godownStock = pgTable("godown_stock", {
-  id: serial("id").primaryKey(),
+export const godownStock = sqliteTable("godown_stock", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   productId: integer("product_id").notNull(),
   casesAvailable: integer("cases_available").notNull().default(0),
 });
 
-export const trucks = pgTable("trucks", {
-  id: serial("id").primaryKey(),
+export const trucks = sqliteTable("trucks", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   vehicleNumber: text("vehicle_number").notNull(),
   driverName: text("driver_name").notNull(),
 });
 
-export const truckStock = pgTable("truck_stock", {
-  id: serial("id").primaryKey(),
+export const truckStock = sqliteTable("truck_stock", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   truckId: integer("truck_id").notNull(),
   productId: integer("product_id").notNull(),
   casesAvailable: integer("cases_available").notNull().default(0),
 });
 
-export const routes = pgTable("routes", {
-  id: serial("id").primaryKey(),
+export const routes = sqliteTable("routes", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
 });
 
-export const customers = pgTable("customers", {
-  id: serial("id").primaryKey(),
+export const customers = sqliteTable("customers", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   routeId: integer("route_id").notNull(),
@@ -43,37 +59,37 @@ export const customers = pgTable("customers", {
   address: text("address").notNull(),
 });
 
-export const offers = pgTable("offers", {
-  id: serial("id").primaryKey(),
+export const offers = sqliteTable("offers", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   buyProductId: integer("buy_product_id").notNull(),
   buyQuantity: integer("buy_quantity").notNull(),
   freeProductId: integer("free_product_id").notNull(),
   freeQuantity: integer("free_quantity").notNull(),
-  isActive: boolean("is_active").default(true),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
 });
 
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
+export const orders = sqliteTable("orders", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   customerId: integer("customer_id").notNull(),
   truckId: integer("truck_id").notNull(),
-  date: timestamp("date").defaultNow(),
+  date: integer('date', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   totalAmount: integer("total_amount").notNull(),
   paymentMode: text("payment_mode").notNull(), // Cash, UPI, Credit, Bank Transfer
 });
 
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
+export const orderItems = sqliteTable("order_items", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   orderId: integer("order_id").notNull(),
   productId: integer("product_id").notNull(),
   quantity: integer("quantity").notNull(),
-  isFree: boolean("is_free").default(false),
+  isFree: integer('is_free', { mode: 'boolean' }).default(false),
 });
 
-export const expenses = pgTable("expenses", {
-  id: serial("id").primaryKey(),
+export const expenses = sqliteTable("expenses", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
   truckId: integer("truck_id").notNull(),
-  date: timestamp("date").defaultNow(),
+  date: integer('date', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   description: text("description").notNull(),
   amount: integer("amount").notNull(),
 });
@@ -121,12 +137,18 @@ export const orderItemRelations = relations(orderItems, ({ one }) => ({
 }));
 
 // Schemas
-export const insertProductSchema = createInsertSchema(products).omit({ id: true });
+export const insertProductSchema = createInsertSchema(products, {
+  category: productCategorySchema.optional(),
+}).omit({ id: true });
+
+/** PATCH body — all fields optional; category must be a known value when sent */
+export const patchProductSchema = insertProductSchema.partial();
 export const insertGodownStockSchema = createInsertSchema(godownStock).omit({ id: true });
 export const insertTruckSchema = createInsertSchema(trucks).omit({ id: true });
 export const insertTruckStockSchema = createInsertSchema(truckStock).omit({ id: true });
 export const insertRouteSchema = createInsertSchema(routes).omit({ id: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true });
+export const patchCustomerSchema = insertCustomerSchema.partial();
 export const insertOfferSchema = createInsertSchema(offers).omit({ id: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, date: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
@@ -172,6 +194,7 @@ export type OrderItem = typeof orderItems.$inferSelect & { product?: Product };
 export type Expense = typeof expenses.$inferSelect;
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type InsertGodownStock = z.infer<typeof insertGodownStockSchema>;
 export type InsertRoute = z.infer<typeof insertRouteSchema>;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type InsertTruck = z.infer<typeof insertTruckSchema>;

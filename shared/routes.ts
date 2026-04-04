@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { 
-  insertProductSchema, insertRouteSchema, insertCustomerSchema, 
+  insertProductSchema, patchProductSchema, insertRouteSchema, insertCustomerSchema, patchCustomerSchema,
   insertTruckSchema, insertOfferSchema, insertExpenseSchema,
   checkoutSchema, loadTruckSchema, returnStockSchema
 } from './schema';
@@ -34,6 +34,24 @@ export const api = {
       responses: {
         201: z.any(),
         400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/products/:id' as const,
+      input: patchProductSchema,
+      responses: {
+        200: z.any(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/products/:id' as const,
+      responses: {
+        204: z.any(),
+        404: errorSchemas.notFound,
       },
     },
   },
@@ -111,6 +129,21 @@ export const api = {
       path: '/api/customers' as const,
       input: insertCustomerSchema,
       responses: { 201: z.any() }
+    },
+    payCredit: {
+      method: 'POST' as const,
+      path: '/api/customers/:id/pay-credit' as const,
+      responses: { 200: z.any() }
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/customers/:id' as const,
+      input: patchCustomerSchema,
+      responses: {
+        200: z.any(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      }
     }
   },
   offers: {

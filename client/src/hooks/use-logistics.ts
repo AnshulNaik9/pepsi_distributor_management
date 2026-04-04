@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import type { Truck, Route, InsertTruck, InsertRoute, LoadTruckRequest, ReturnStockRequest, TruckStock } from "@shared/schema";
+import type { Truck, Route, Customer, InsertTruck, InsertRoute, InsertCustomer, LoadTruckRequest, ReturnStockRequest, TruckStock } from "@shared/schema";
 
 export function useTrucks() {
   return useQuery<Truck[]>({
@@ -52,7 +52,10 @@ export function useLoadTruck() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
       });
-      if (!res.ok) throw new Error("Failed to load truck");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Failed to load truck");
+      }
       return res.json();
     },
     onSuccess: (_, variables) => {
@@ -105,5 +108,35 @@ export function useCreateRoute() {
       return res.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.routes.list.path] })
+  });
+}
+
+export function useCustomers(routeId?: number) {
+  return useQuery<Customer[]>({
+    queryKey: [api.customers.list.path, routeId],
+    queryFn: async () => {
+      const url = routeId 
+        ? buildUrl(api.customers.list.path, { routeId }) 
+        : api.customers.list.path;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch customers");
+      return res.json();
+    }
+  });
+}
+
+export function useCreateCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: InsertCustomer) => {
+      const res = await fetch(api.customers.create.path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error("Failed to create customer");
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.customers.list.path] })
   });
 }

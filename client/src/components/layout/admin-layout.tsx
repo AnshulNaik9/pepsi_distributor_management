@@ -2,7 +2,8 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, Package, Truck, Users, 
-  Map as MapIcon, Tag, Receipt, LogOut 
+  Map as MapIcon, Tag, IndianRupee, LogOut,
+  TrendingUp, Trophy
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,13 +21,15 @@ import {
 
 const adminMenu = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "Profit Pulse", url: "/admin/profit-pulse", icon: TrendingUp },
+  { title: "Top Performers", url: "/admin/top-performers", icon: Trophy },
   { title: "Products", url: "/admin/products", icon: Package },
   { title: "Godown Stock", url: "/admin/stock", icon: Package },
   { title: "Trucks & Loading", url: "/admin/trucks", icon: Truck },
   { title: "Customers", url: "/admin/customers", icon: Users },
   { title: "Routes", url: "/admin/routes", icon: MapIcon },
   { title: "Offers", url: "/admin/offers", icon: Tag },
-  { title: "Orders", url: "/admin/orders", icon: Receipt },
+  { title: "Orders", url: "/admin/orders", icon: IndianRupee },
 ];
 
 export function AdminLayout({ children }: { children: ReactNode }) {

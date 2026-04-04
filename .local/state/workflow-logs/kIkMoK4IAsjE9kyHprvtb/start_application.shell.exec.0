@@ -1,0 +1,12 @@
+[1G[0K⠙[1G[0K
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K⠙[1G[0K4:38:31 AM [express] serving on port 5000
+4:39:53 AM [express] GET /api/products 200 in 14ms :: [{"id":1,"name":"Pepsi 2.25L","imageUrl":"https://images.unsplash.com/photo-1629203851122-3726ecdf080e","price":100},{"id":2,"name":"7UP 2.25L","imageUrl":"https://images.unsplash.com/photo-1622483767028-3f66f32aef97","price":95},{"id":3,"name":"Aquafina 1L","imageUrl":"https://images.unsplash.com/photo-1548839140-29a749e1bc4c","price":20},{"id":4,"name":"PEPSI 2.25L","imageUrl":"https://m.media-amazon.com/images/I/71Z1QcRLPyL.jpg","price":830}]
+4:39:53 AM [express] GET /api/godown-stock 200 in 81ms :: [{"id":1,"productId":1,"casesAvailable":116,"product":{"id":1,"name":"Pepsi 2.25L","imageUrl":"https://images.unsplash.com/photo-1629203851122-3726ecdf080e","price":100}},{"id":2,"productId":2,"casesAvailable":76,"product":{"id":2,"name":"7UP 2.25L","imageUrl":"https://images.unsplash.com/photo-1622483767028-3f66f32aef97","price":95}},{"id":3,"productId":3,"casesAvailable":148,"product":{"id":3,"name":"Aquafina 1L","imageUrl":"https://images.unsplash.com/photo-1548839140-29a749e1bc4c","price":20}}]
+4:39:53 AM [express] GET /api/orders 200 in 74ms :: []
+4:40:11 AM [express] GET /api/trucks 200 in 12ms :: [{"id":1,"vehicleNumber":"KA19 AB 1234","driverName":"Ramesh"}]
+4:40:29 AM [express] GET /api/products 304 in 12ms :: [{"id":1,"name":"Pepsi 2.25L","imageUrl":"https://images.unsplash.com/photo-1629203851122-3726ecdf080e","price":100},{"id":2,"name":"7UP 2.25L","imageUrl":"https://images.unsplash.com/photo-1622483767028-3f66f32aef97","price":95},{"id":3,"name":"Aquafina 1L","imageUrl":"https://images.unsplash.com/photo-1548839140-29a749e1bc4c","price":20},{"id":4,"name":"PEPSI 2.25L","imageUrl":"https://m.media-amazon.com/images/I/71Z1QcRLPyL.jpg","price":830}]
+4:40:29 AM [express] GET /api/orders 304 in 16ms :: []
+4:40:29 AM [express] GET /api/godown-stock 304 in 11ms :: [{"id":1,"productId":1,"casesAvailable":116,"product":{"id":1,"name":"Pepsi 2.25L","imageUrl":"https://images.unsplash.com/photo-1629203851122-3726ecdf080e","price":100}},{"id":2,"productId":2,"casesAvailable":76,"product":{"id":2,"name":"7UP 2.25L","imageUrl":"https://images.unsplash.com/photo-1622483767028-3f66f32aef97","price":95}},{"id":3,"productId":3,"casesAvailable":148,"product":{"id":3,"name":"Aquafina 1L","imageUrl":"https://images.unsplash.com/photo-1548839140-29a749e1bc4c","price":20}}]

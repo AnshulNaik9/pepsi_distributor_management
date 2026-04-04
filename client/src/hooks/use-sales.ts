@@ -31,6 +31,36 @@ export function useCreateCustomer() {
   });
 }
 
+export function usePayCredit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const url = api.customers.payCredit.path.replace(':id', id.toString());
+      const res = await fetch(url, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to clear credit balance");
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.customers.list.path] })
+  });
+}
+
+export function useUpdateCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: Partial<InsertCustomer> }) => {
+      const url = api.customers.update.path.replace(':id', id.toString());
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error("Failed to update customer");
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.customers.list.path] })
+  });
+}
+
 export function useOffers() {
   return useQuery<Offer[]>({
     queryKey: [api.offers.list.path],

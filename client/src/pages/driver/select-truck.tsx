@@ -9,9 +9,8 @@ export default function SelectTruckPage() {
   const [, setLocation] = useLocation();
 
   const handleSelect = (truckId: number) => {
-    // Store selected truck in localStorage for simplicity in this demo
     localStorage.setItem('driver_truck_id', truckId.toString());
-    setLocation("/driver/billing");
+    setLocation("/driver/select-route");
   };
 
   return (

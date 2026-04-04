@@ -28,6 +28,37 @@ export async function registerRoutes(
     }
   });
 
+  app.patch(api.products.update.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const body = api.products.update.input.parse(req.body);
+      const product = await storage.updateProduct(id, body);
+      res.json(product);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        res.status(400).json({ message: e.errors[0].message });
+      } else if (e instanceof Error && e.message === "Product not found") {
+        res.status(404).json({ message: e.message });
+      } else {
+        res.status(500).json({ message: "Internal Error" });
+      }
+    }
+  });
+
+  app.delete(api.products.delete.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProduct(id);
+      res.status(204).end();
+    } catch (e) {
+      if (e instanceof Error && e.message === "Product not found") {
+        res.status(404).json({ message: e.message });
+      } else {
+        res.status(500).json({ message: "Internal Error" });
+      }
+    }
+  });
+
   // === GODOWN STOCK ===
   app.get(api.godownStock.list.path, async (req, res) => {
     const stock = await storage.getGodownStock();
@@ -118,6 +149,37 @@ export async function registerRoutes(
     }
   });
 
+  app.post(api.customers.payCredit.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.payCustomerCredit(id);
+      res.json({ success: true });
+    } catch (e) {
+      if (e instanceof Error && e.message === "Customer not found") {
+        res.status(404).json({ message: e.message });
+      } else {
+        res.status(500).json({ message: "Internal Error" });
+      }
+    }
+  });
+
+  app.patch(api.customers.update.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const body = api.customers.update.input.parse(req.body);
+      const customer = await storage.updateCustomer(id, body);
+      res.json(customer);
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        res.status(400).json({ message: e.errors[0].message });
+      } else if (e instanceof Error && e.message === "Customer not found") {
+        res.status(404).json({ message: e.message });
+      } else {
+        res.status(500).json({ message: "Internal Error" });
+      }
+    }
+  });
+
   // === OFFERS ===
   app.get(api.offers.list.path, async (req, res) => {
     const offers = await storage.getOffers();
@@ -175,9 +237,9 @@ export async function registerRoutes(
 async function seedDatabase() {
   const existingProducts = await storage.getProducts();
   if (existingProducts.length === 0) {
-    const p1 = await storage.createProduct({ name: "Pepsi 2.25L", price: 100, imageUrl: "https://images.unsplash.com/photo-1629203851122-3726ecdf080e" });
-    const p2 = await storage.createProduct({ name: "7UP 2.25L", price: 95, imageUrl: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97" });
-    const p3 = await storage.createProduct({ name: "Aquafina 1L", price: 20, imageUrl: "https://images.unsplash.com/photo-1548839140-29a749e1bc4c" });
+    const p1 = await storage.createProduct({ name: "Pepsi 2.25L", price: 100, imageUrl: "https://images.unsplash.com/photo-1629203851122-3726ecdf080e", category: "2_25_ltr" });
+    const p2 = await storage.createProduct({ name: "7UP 2.25L", price: 95, imageUrl: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97", category: "2_25_ltr" });
+    const p3 = await storage.createProduct({ name: "Aquafina 1L", price: 20, imageUrl: "https://images.unsplash.com/photo-1548839140-29a749e1bc4c", category: "1_ltr" });
 
     await storage.addGodownStock(p1.id, 120);
     await storage.addGodownStock(p2.id, 80);
@@ -191,7 +253,7 @@ async function seedDatabase() {
     await storage.createCustomer({ name: "Krishna Bakery", phone: "7654321098", routeId: r2.id, address: "88 Bakery Lane", creditBalance: 0 });
 
     const t1 = await storage.createTruck({ vehicleNumber: "KA19 AB 1234", driverName: "Ramesh" });
-    
+
     await storage.createOffer({
       name: "Buy 1 Pepsi Case Get 2 Aquafina Free",
       buyProductId: p1.id,

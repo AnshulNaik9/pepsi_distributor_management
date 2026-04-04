@@ -7,12 +7,14 @@ import {
   type Order, type OrderItem, type Expense, type InsertExpense,
   type CheckoutRequest, type LoadTruckRequest, type ReturnStockRequest
 } from "@shared/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Products
   getProducts(): Promise<Product[]>;
   createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product>;
+  deleteProduct(id: number): Promise<void>;
 
   // Godown Stock
   getGodownStock(): Promise<GodownStock[]>;
@@ -34,6 +36,8 @@ export interface IStorage {
   // Customers
   getCustomers(routeId?: number): Promise<Customer[]>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
+  updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer>;
+  payCustomerCredit(id: number): Promise<void>;
 
   // Offers
   getOffers(): Promise<Offer[]>;
@@ -57,6 +61,36 @@ export class DatabaseStorage implements IStorage {
   async createProduct(product: InsertProduct): Promise<Product> {
     const [p] = await db.insert(products).values(product).returning();
     return p;
+  }
+  
+  async updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product> {
+    // Only set defined fields so Drizzle/SQLite don't receive undefined (and category PATCH is kept)
+    const patch = Object.fromEntries(
+      Object.entries(product).filter(([, v]) => v !== undefined)
+    ) as Partial<InsertProduct>;
+    if (Object.keys(patch).length === 0) {
+      const existing = await db.select().from(products).where(eq(products.id, id));
+      if (existing.length === 0) throw new Error("Product not found");
+      return existing[0];
+    }
+    const [p] = await db.update(products).set(patch).where(eq(products.id, id)).returning();
+    if (!p) throw new Error("Product not found");
+    return p;
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    // Check if product exists first
+    const existing = await db.select().from(products).where(eq(products.id, id));
+    if (existing.length === 0) throw new Error("Product not found");
+
+    // Delete associated entries to avoid constraint violations
+    await db.delete(godownStock).where(eq(godownStock.productId, id));
+    await db.delete(truckStock).where(eq(truckStock.productId, id));
+    await db.delete(offers).where(or(eq(offers.buyProductId, id), eq(offers.freeProductId, id)));
+    await db.delete(orderItems).where(eq(orderItems.productId, id));
+    
+    // Delete the product
+    await db.delete(products).where(eq(products.id, id));
   }
 
   // Godown Stock
@@ -104,65 +138,65 @@ export class DatabaseStorage implements IStorage {
   }
 
   async loadTruck(req: LoadTruckRequest): Promise<void> {
-    await db.transaction(async (tx) => {
+    db.transaction((tx) => {
       for (const item of req.items) {
         // Decrease godown stock
-        const gStock = await tx.select().from(godownStock).where(eq(godownStock.productId, item.productId));
+        const gStock = tx.select().from(godownStock).where(eq(godownStock.productId, item.productId)).all();
         if (gStock.length === 0 || gStock[0].casesAvailable < item.quantity) {
           throw new Error(`Not enough stock in godown for product ${item.productId}`);
         }
 
-        await tx.update(godownStock)
+        tx.update(godownStock)
           .set({ casesAvailable: sql`${godownStock.casesAvailable} - ${item.quantity}` })
-          .where(eq(godownStock.productId, item.productId));
+          .where(eq(godownStock.productId, item.productId)).run();
 
         // Increase truck stock
-        const tStock = await tx.select().from(truckStock).where(
+        const tStock = tx.select().from(truckStock).where(
           and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, item.productId))
-        );
+        ).all();
 
         if (tStock.length > 0) {
-          await tx.update(truckStock)
+          tx.update(truckStock)
             .set({ casesAvailable: sql`${truckStock.casesAvailable} + ${item.quantity}` })
-            .where(and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, item.productId)));
+            .where(and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, item.productId))).run();
         } else {
-          await tx.insert(truckStock).values({
+          tx.insert(truckStock).values({
             truckId: req.truckId,
             productId: item.productId,
             casesAvailable: item.quantity
-          });
+          }).run();
         }
       }
     });
   }
 
   async returnStock(req: ReturnStockRequest): Promise<void> {
-    await db.transaction(async (tx) => {
+    db.transaction((tx) => {
       for (const item of req.items) {
         // Decrease truck stock
-        const tStock = await tx.select().from(truckStock).where(
+        const tStock = tx.select().from(truckStock).where(
           and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, item.productId))
-        );
+        ).all();
         
         if (tStock.length === 0 || tStock[0].casesAvailable < item.quantity) {
           throw new Error(`Not enough stock in truck for product ${item.productId}`);
         }
 
-        await tx.update(truckStock)
+        tx.update(truckStock)
           .set({ casesAvailable: sql`${truckStock.casesAvailable} - ${item.quantity}` })
-          .where(and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, item.productId)));
+          .where(and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, item.productId))).run();
 
         // Increase godown stock
-        const gStock = await tx.select().from(godownStock).where(eq(godownStock.productId, item.productId));
+        const gStock = tx.select().from(godownStock).where(eq(godownStock.productId, item.productId)).all();
         if (gStock.length > 0) {
-          await tx.update(godownStock)
+          tx.update(godownStock)
             .set({ casesAvailable: sql`${godownStock.casesAvailable} + ${item.quantity}` })
-            .where(eq(godownStock.productId, item.productId));
+            .where(eq(godownStock.productId, item.productId)).run();
         } else {
-          await tx.insert(godownStock).values({
+          tx.insert(godownStock).values({
             productId: item.productId,
             casesAvailable: item.quantity
-          });
+          }).run();
         }
       }
     });
@@ -191,6 +225,26 @@ export class DatabaseStorage implements IStorage {
     return c;
   }
 
+  async updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer> {
+    const existing = await db.select().from(customers).where(eq(customers.id, id));
+    if (existing.length === 0) throw new Error("Customer not found");
+
+    const [updated] = await db.update(customers)
+      .set(customer)
+      .where(eq(customers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async payCustomerCredit(id: number): Promise<void> {
+    const existing = await db.select().from(customers).where(eq(customers.id, id));
+    if (existing.length === 0) throw new Error("Customer not found");
+
+    await db.update(customers)
+      .set({ creditBalance: 0 })
+      .where(eq(customers.id, id));
+  }
+
   // Offers
   async getOffers(): Promise<Offer[]> {
     return await db.select().from(offers).where(eq(offers.isActive, true));
@@ -215,13 +269,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async checkout(req: CheckoutRequest): Promise<Order> {
-    let finalOrder: Order;
-    
-    await db.transaction(async (tx) => {
+    const orderId = db.transaction((tx) => {
       // 1. Fetch products and offers
-      const allProducts = await tx.select().from(products);
+      const allProducts = tx.select().from(products).all();
       const productMap = new Map(allProducts.map(p => [p.id, p]));
-      const activeOffers = await tx.select().from(offers).where(eq(offers.isActive, true));
+      const activeOffers = tx.select().from(offers).where(eq(offers.isActive, true)).all();
 
       let totalAmount = 0;
       const finalItems: { productId: number, quantity: number, isFree: boolean }[] = [];
@@ -248,59 +300,79 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // 2. Deduct from truck stock
-      for (const [productId, quantity] of stockDeductions.entries()) {
-        const tStock = await tx.select().from(truckStock).where(
+      // 2. Deduct from combined stock (Truck first, then Godown)
+      for (const [productId, quantity] of Array.from(stockDeductions.entries())) {
+        const tStock = tx.select().from(truckStock).where(
           and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, productId))
-        );
+        ).all();
+        
+        const gStock = tx.select().from(godownStock).where(
+          eq(godownStock.productId, productId)
+        ).all();
 
-        if (tStock.length === 0 || tStock[0].casesAvailable < quantity) {
-          throw new Error(`Not enough stock in truck for product ${productId}`);
+        const truckAvailable = tStock.length > 0 ? tStock[0].casesAvailable : 0;
+        const godownAvailable = gStock.length > 0 ? gStock[0].casesAvailable : 0;
+        
+        if (truckAvailable + godownAvailable < quantity) {
+          throw new Error(`Not enough total stock for product ${productId}. Available: ${truckAvailable + godownAvailable}, Required: ${quantity}`);
         }
 
-        await tx.update(truckStock)
-          .set({ casesAvailable: sql`${truckStock.casesAvailable} - ${quantity}` })
-          .where(and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, productId)));
+        const fromTruck = Math.min(truckAvailable, quantity);
+        const fromGodown = quantity - fromTruck;
+
+        // Deduct from truck
+        if (fromTruck > 0) {
+          tx.update(truckStock)
+            .set({ casesAvailable: sql`${truckStock.casesAvailable} - ${fromTruck}` })
+            .where(and(eq(truckStock.truckId, req.truckId), eq(truckStock.productId, productId))).run();
+        }
+
+        // Deduct from godown
+        if (fromGodown > 0) {
+          tx.update(godownStock)
+            .set({ casesAvailable: sql`${godownStock.casesAvailable} - ${fromGodown}` })
+            .where(eq(godownStock.productId, productId)).run();
+        }
       }
 
       // 3. Create order
-      const [order] = await tx.insert(orders).values({
+      const order = tx.insert(orders).values({
         customerId: req.customerId,
         truckId: req.truckId,
         paymentMode: req.paymentMode,
         totalAmount,
-      }).returning();
+      }).returning().get();
 
       // 4. Create order items
       for (const item of finalItems) {
-        await tx.insert(orderItems).values({
+        tx.insert(orderItems).values({
           orderId: order.id,
           productId: item.productId,
           quantity: item.quantity,
           isFree: item.isFree,
-        });
+        }).run();
       }
       
       // Update customer credit if payment mode is credit
       if (req.paymentMode === "Credit") {
-        await tx.update(customers)
+        tx.update(customers)
           .set({ creditBalance: sql`${customers.creditBalance} + ${totalAmount}` })
-          .where(eq(customers.id, req.customerId));
+          .where(eq(customers.id, req.customerId)).run();
       }
 
-      // 5. Fetch fully populated order to return
-      const populated = await tx.query.orders.findFirst({
-        where: eq(orders.id, order.id),
-        with: {
-          customer: true,
-          items: { with: { product: true } }
-        }
-      });
-      if (!populated) throw new Error("Failed to populate order after creation");
-      finalOrder = populated as Order;
+      return order.id;
     });
 
-    return finalOrder!;
+    // 5. Fetch fully populated order to return
+    const populated = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId as number),
+      with: {
+        customer: true,
+        items: { with: { product: true } }
+      }
+    });
+    if (!populated) throw new Error("Failed to populate order after creation");
+    return populated as Order;
   }
 
   // Expenses
