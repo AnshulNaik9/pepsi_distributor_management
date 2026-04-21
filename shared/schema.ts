@@ -57,6 +57,29 @@ export const customers = sqliteTable("customers", {
   routeId: integer("route_id").notNull(),
   creditBalance: integer("credit_balance").notNull().default(0),
   address: text("address").notNull(),
+  isDeleted: integer('is_deleted', { mode: 'boolean' }).default(false),
+  hasSpecialDiscount: integer('has_special_discount', { mode: 'boolean' }).default(false),
+});
+
+
+export const monthlySnapshots = sqliteTable("monthly_snapshots", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  month: text("month").notNull(), // "2026-04"
+  customerId: integer("customer_id").notNull(),
+  customerName: text("customer_name").notNull(),
+  totalPurchases: integer("total_purchases").notNull().default(0),
+  orderCount: integer("order_count").notNull().default(0),
+  snapshotDate: integer('snapshot_date', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
+
+export const auditLog = sqliteTable("audit_log", {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  action: text("action").notNull(), // "DELETE_CUSTOMER", "DELETE_ROUTE", etc.
+  entityType: text("entity_type").notNull(),
+  entityId: integer("entity_id").notNull(),
+  entityName: text("entity_name").notNull(),
+  details: text("details"),
+  timestamp: integer('timestamp', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
 export const offers = sqliteTable("offers", {
@@ -76,6 +99,7 @@ export const orders = sqliteTable("orders", {
   date: integer('date', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   totalAmount: integer("total_amount").notNull(),
   paymentMode: text("payment_mode").notNull(), // Cash, UPI, Credit, Bank Transfer
+  isArchived: integer('is_archived', { mode: 'boolean' }).default(false),
 });
 
 export const orderItems = sqliteTable("order_items", {
@@ -84,6 +108,7 @@ export const orderItems = sqliteTable("order_items", {
   productId: integer("product_id").notNull(),
   quantity: integer("quantity").notNull(),
   isFree: integer('is_free', { mode: 'boolean' }).default(false),
+  customPrice: integer("custom_price"),
 });
 
 export const expenses = sqliteTable("expenses", {
@@ -120,6 +145,10 @@ export const routeRelations = relations(routes, ({ many }) => ({
   customers: many(customers),
 }));
 
+export const monthlySnapshotRelations = relations(monthlySnapshots, ({ one }) => ({
+  customer: one(customers, { fields: [monthlySnapshots.customerId], references: [customers.id] }),
+}));
+
 export const customerRelations = relations(customers, ({ one, many }) => ({
   route: one(routes, { fields: [customers.routeId], references: [routes.id] }),
   orders: many(orders),
@@ -153,15 +182,23 @@ export const insertOfferSchema = createInsertSchema(offers).omit({ id: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, date: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, date: true });
+export const insertMonthlySnapshotSchema = createInsertSchema(monthlySnapshots).omit({ id: true, snapshotDate: true });
 
 // Custom compound schema for checkout
 export const checkoutSchema = z.object({
   customerId: z.number(),
   truckId: z.number(),
   paymentMode: z.string(),
+  splitAmounts: z.object({
+    cash: z.number(),
+    upi: z.number(),
+    credit: z.number()
+  }).optional(),
   items: z.array(z.object({
     productId: z.number(),
     quantity: z.number(),
+    customPrice: z.number().optional(),
+    customFreeQty: z.number().optional(),
   })),
 });
 
@@ -181,6 +218,12 @@ export const returnStockSchema = z.object({
   })),
 });
 
+export const reportDamageSchema = z.object({
+  productId: z.number(),
+  truckId: z.number(),
+  quantity: z.number().positive(),
+});
+
 // Types
 export type Product = typeof products.$inferSelect;
 export type GodownStock = typeof godownStock.$inferSelect & { product?: Product };
@@ -192,6 +235,8 @@ export type Offer = typeof offers.$inferSelect;
 export type Order = typeof orders.$inferSelect & { customer?: Customer, items?: OrderItem[] };
 export type OrderItem = typeof orderItems.$inferSelect & { product?: Product };
 export type Expense = typeof expenses.$inferSelect;
+export type MonthlySnapshot = typeof monthlySnapshots.$inferSelect;
+export type AuditLogEntry = typeof auditLog.$inferSelect;
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type InsertGodownStock = z.infer<typeof insertGodownStockSchema>;
@@ -200,6 +245,8 @@ export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type InsertTruck = z.infer<typeof insertTruckSchema>;
 export type InsertOffer = z.infer<typeof insertOfferSchema>;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type InsertMonthlySnapshot = z.infer<typeof insertMonthlySnapshotSchema>;
 export type CheckoutRequest = z.infer<typeof checkoutSchema>;
 export type LoadTruckRequest = z.infer<typeof loadTruckSchema>;
 export type ReturnStockRequest = z.infer<typeof returnStockSchema>;
+export type ReportDamageRequest = z.infer<typeof reportDamageSchema>;

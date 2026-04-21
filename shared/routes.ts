@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { 
   insertProductSchema, patchProductSchema, insertRouteSchema, insertCustomerSchema, patchCustomerSchema,
   insertTruckSchema, insertOfferSchema, insertExpenseSchema,
-  checkoutSchema, loadTruckSchema, returnStockSchema
+  checkoutSchema, loadTruckSchema, returnStockSchema, reportDamageSchema
 } from './schema';
 
 export const errorSchemas = {
@@ -72,6 +72,14 @@ export const api = {
       },
     }
   },
+  inventory: {
+    damage: {
+      method: 'POST' as const,
+      path: '/api/inventory/damage' as const,
+      input: reportDamageSchema,
+      responses: { 200: z.any(), 400: errorSchemas.validation }
+    }
+  },
   trucks: {
     list: {
       method: 'GET' as const,
@@ -102,6 +110,14 @@ export const api = {
       method: 'GET' as const,
       path: '/api/trucks/:id/stock' as const,
       responses: { 200: z.array(z.any()) }
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/trucks/:id' as const,
+      responses: {
+        204: z.any(),
+        404: errorSchemas.notFound,
+      }
     }
   },
   routes: {
@@ -115,6 +131,15 @@ export const api = {
       path: '/api/routes' as const,
       input: insertRouteSchema,
       responses: { 201: z.any() }
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/routes/:id' as const,
+      responses: {
+        204: z.any(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+      }
     }
   },
   customers: {
@@ -144,6 +169,24 @@ export const api = {
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
       }
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/customers/:id' as const,
+      responses: {
+        204: z.any(),
+        404: errorSchemas.notFound,
+      }
+    },
+    orders: {
+      method: 'GET' as const,
+      path: '/api/customers/:id/orders' as const,
+      responses: { 200: z.array(z.any()) }
+    },
+    resetMonthly: {
+      method: 'POST' as const,
+      path: '/api/customers/:id/reset-monthly' as const,
+      responses: { 200: z.any() }
     }
   },
   offers: {
@@ -170,6 +213,17 @@ export const api = {
       path: '/api/orders/checkout' as const,
       input: checkoutSchema,
       responses: { 201: z.any(), 400: errorSchemas.validation }
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/orders/:id' as const,
+      input: checkoutSchema,
+      responses: { 200: z.any(), 400: errorSchemas.validation, 404: errorSchemas.notFound }
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/orders/:id' as const,
+      responses: { 204: z.any(), 404: errorSchemas.notFound }
     }
   },
   expenses: {
@@ -183,6 +237,35 @@ export const api = {
       path: '/api/expenses' as const,
       input: insertExpenseSchema,
       responses: { 201: z.any() }
+    }
+  },
+  reports: {
+    monthlyCSV: {
+      method: 'GET' as const,
+      path: '/api/reports/monthly-csv' as const,
+      responses: { 200: z.any() }
+    }
+  },
+  admin: {
+    monthlyReset: {
+      method: 'POST' as const,
+      path: '/api/admin/monthly-reset' as const,
+      responses: { 200: z.any() }
+    },
+    monthlyHistory: {
+      method: 'GET' as const,
+      path: '/api/admin/monthly-history' as const,
+      responses: { 200: z.array(z.any()) }
+    },
+    availableMonths: {
+      method: 'GET' as const,
+      path: '/api/admin/available-months' as const,
+      responses: { 200: z.array(z.string()) }
+    },
+    deletedOrders: {
+      method: 'GET' as const,
+      path: '/api/admin/deleted-orders' as const,
+      responses: { 200: z.array(z.any()) }
     }
   }
 };

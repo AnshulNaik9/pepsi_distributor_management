@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useTrucks, useCreateTruck, useLoadTruck, useTruckStock, useReturnStock } from "@/hooks/use-logistics";
+import { useTrucks, useCreateTruck, useLoadTruck, useTruckStock, useReturnStock, useDeleteTruck } from "@/hooks/use-logistics";
 import { useProducts, useGodownStock } from "@/hooks/use-inventory";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Truck, Plus, ArrowRight, Minus, Package, AlertCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Truck, Plus, ArrowRight, Minus, Package, AlertCircle, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatQuantity } from "@/lib/utils";
 
 export default function TrucksPage() {
   const { data: trucks = [] } = useTrucks();
@@ -27,44 +29,54 @@ export default function TrucksPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-10 animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-display font-bold">Trucks & Loading</h1>
-          <p className="text-muted-foreground mt-1">Manage vehicles and load stock from Godown into trucks.</p>
+          <h1 className="text-4xl font-display font-black tracking-tight text-slate-800">
+            Logistics & Fleet
+          </h1>
+          <p className="text-muted-foreground font-medium mt-1 uppercase tracking-tighter">
+            Manage your delivery vehicles and synchronize stock loading
+          </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="rounded-xl shadow-lg shadow-primary/20">
-              <Plus className="w-4 h-4 mr-2" /> Add Truck
+            <Button className="h-14 px-8 rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-lg font-black transition-all active:scale-95">
+              <Plus className="w-5 h-5 mr-2" /> CREATE NEW VAN
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogContent className="sm:max-w-md rounded-[2.5rem] p-8 border-none shadow-2xl">
             <DialogHeader>
-              <DialogTitle>New Truck</DialogTitle>
+              <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight">Register Vehicle</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6 pt-4">
               <div className="space-y-2">
-                <label className="text-sm font-semibold">Vehicle Number</label>
-                <Input required value={formData.vehicleNumber} onChange={e => setFormData({...formData, vehicleNumber: e.target.value})} placeholder="KA-01-AB-1234" />
+                <label className="text-xs font-black uppercase text-slate-400 tracking-widest ml-1">Vehicle Number</label>
+                <Input required value={formData.vehicleNumber} onChange={e => setFormData({...formData, vehicleNumber: e.target.value})} placeholder="KA-01-AB-1234" className="h-14 rounded-2xl font-black text-lg bg-slate-50 border-slate-100" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold">Driver Name</label>
-                <Input required value={formData.driverName} onChange={e => setFormData({...formData, driverName: e.target.value})} placeholder="Ramesh" />
+                <label className="text-xs font-black uppercase text-slate-400 tracking-widest ml-1">Assigned Driver</label>
+                <Input required value={formData.driverName} onChange={e => setFormData({...formData, driverName: e.target.value})} placeholder="Enter name..." className="h-14 rounded-2xl font-black text-lg bg-slate-50 border-slate-100" />
               </div>
-              <Button type="submit" disabled={creating} className="w-full h-12 rounded-xl">Save</Button>
+              <Button type="submit" disabled={creating} className="w-full h-16 rounded-2xl text-xl font-black shadow-lg">Save Van Record</Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
         {trucks.map(truck => (
           <TruckCard key={truck.id} truck={truck} />
         ))}
         {trucks.length === 0 && (
-          <div className="col-span-2 text-center py-16 text-muted-foreground bg-white rounded-2xl border border-dashed border-border">
-            No trucks added yet. Click "Add Truck" to get started.
+          <div className="col-span-full text-center py-24 text-muted-foreground bg-white rounded-[3rem] border-4 border-dashed border-slate-50 flex flex-col items-center justify-center gap-4">
+            <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center text-slate-200">
+               <Truck className="w-10 h-10" />
+            </div>
+            <div>
+               <p className="font-black text-slate-300 uppercase tracking-widest">No Active Fleet Detected</p>
+               <p className="text-sm font-medium opacity-50">Register a vehicle to start loading stock</p>
+            </div>
           </div>
         )}
       </div>
@@ -74,37 +86,113 @@ export default function TrucksPage() {
 
 function TruckCard({ truck }: { truck: { id: number; vehicleNumber: string; driverName: string } }) {
   const { data: truckStock = [] } = useTruckStock(truck.id);
+  const { mutate: deleteTruck, isPending: isDeleting } = useDeleteTruck();
+  const { toast } = useToast();
   const totalCases = truckStock.reduce((sum, s) => sum + s.casesAvailable, 0);
 
+  const handleDelete = () => {
+    deleteTruck(truck.id, {
+      onSuccess: (result: any) => {
+        const reassigned = result?.reassignedItems?.length || 0;
+        toast({ 
+          title: `Van "${truck.vehicleNumber}" deleted`,
+          description: reassigned > 0 
+            ? `${result.reassignedItems.reduce((s: number, i: any) => s + i.quantity, 0)} cases returned to godown.`
+            : "No load to reassign.",
+        });
+      },
+      onError: (err: any) => {
+        toast({ 
+          title: "Failed to delete truck", 
+          description: err?.message, 
+          variant: "destructive" 
+        });
+      }
+    });
+  };
+
   return (
-    <Card className="overflow-hidden border-border/50 rounded-2xl shadow-sm hover:shadow-md transition-all">
-      <div className="bg-slate-100 p-4 border-b border-border/50 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-            <Truck className="w-5 h-5 text-slate-700" />
+    <Card className="group relative overflow-hidden border-border/50 rounded-[2.5rem] bg-white shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+      <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
+         <Truck className="w-24 h-24 text-primary" />
+      </div>
+      
+      <div className="p-8">
+        <div className="flex justify-between items-start mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shadow-inner group-hover:bg-primary group-hover:text-white transition-colors duration-500">
+              <Truck className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="font-black text-2xl text-slate-800 tracking-tight">{truck.vehicleNumber}</h3>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
+                 <User className="w-3 h-3" /> {truck.driverName}
+              </div>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-lg">{truck.vehicleNumber}</h3>
-            <p className="text-sm text-muted-foreground">Driver: {truck.driverName}</p>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="w-10 h-10 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-5 h-5" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-[2.5rem] p-8">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-2xl font-black tracking-tight">Decommission Van?</AlertDialogTitle>
+                <AlertDialogDescription className="text-base font-medium">
+                  {totalCases > 0 ? (
+                    <>
+                      This vehicle "{truck.vehicleNumber}" has <span className="text-slate-900 font-black">{Math.round(totalCases)} cases</span> loaded. 
+                      They will be <span className="text-emerald-600 font-black">reassigned to godown stock</span> automatically.
+                    </>
+                  ) : (
+                    `Proceed to remove "${truck.vehicleNumber}" from your fleet database. This cannot be undone.`
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="mt-6">
+                <AlertDialogCancel className="h-14 rounded-2xl border-2 font-black">Hold On</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="h-14 bg-red-500 text-white hover:bg-red-600 rounded-2xl font-black px-8"
+                >
+                  {totalCases > 0 ? "Empty & Delete" : "Confirm Deletion"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        <div className="bg-slate-50 rounded-3xl p-6 flex items-center justify-between border border-slate-100 mb-8">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Payload Status</span>
+            <div className="flex items-center gap-2 mt-1">
+               <Package className="w-4 h-4 text-primary" />
+               <span className="text-xl font-black text-slate-700 tracking-tighter">{Math.round(totalCases)}<span className="text-sm opacity-50 ml-1">Cases Onboard</span></span>
+            </div>
+          </div>
+          <div className="w-1.5 h-12 bg-slate-200 rounded-full overflow-hidden">
+             <div className="bg-primary w-full transition-all duration-1000" style={{ height: `${Math.min(100, (totalCases / 500) * 100)}%` }} />
           </div>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="grid grid-cols-2 gap-3">
           <UnloadTruckDialog truckId={truck.id} vehicleNumber={truck.vehicleNumber} />
           <LoadTruckDialog truckId={truck.id} vehicleNumber={truck.vehicleNumber} />
-        </div>
-      </div>
-      <div className="p-4 bg-white flex items-center justify-between">
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Package className="w-4 h-4" />
-          <span>Current Load</span>
-        </div>
-        <div className="font-bold text-lg text-slate-700">
-          {totalCases} <span className="text-xs font-normal text-muted-foreground">cases</span>
         </div>
       </div>
     </Card>
   );
 }
+
+// Need User icon
+import { User } from "lucide-react";
 
 function LoadTruckDialog({ truckId, vehicleNumber }: { truckId: number, vehicleNumber: string }) {
   const [open, setOpen] = useState(false);
@@ -173,73 +261,90 @@ function LoadTruckDialog({ truckId, vehicleNumber }: { truckId: number, vehicleN
             Select how many cases of each product to transfer from Godown into this truck.
           </p>
 
-          {products.map(product => {
-            const stockEntry = godownStock.find(s => s.productId === product.id);
-            const available = stockEntry?.casesAvailable ?? 0;
-            const selected = loadItems[product.id] ?? 0;
-            const outOfStock = available === 0;
-
+          {["2_25_ltr", "1_ltr", "750_ml", "400_ml", "others"].map(cat => {
+            const categoryProducts = products.filter(p => (p.category || "others") === cat).sort((a, b) => {
+              const aStock = godownStock.find(s => s.productId === a.id)?.casesAvailable ?? 0;
+              const bStock = godownStock.find(s => s.productId === b.id)?.casesAvailable ?? 0;
+              if (aStock > 0 && bStock === 0) return -1;
+              if (aStock === 0 && bStock > 0) return 1;
+              return a.name.localeCompare(b.name);
+            });
+            
+            if (categoryProducts.length === 0) return null;
+            
+            const catLabel = cat === "2_25_ltr" ? "2.25 Ltr" : cat === "1_ltr" ? "1 Ltr" : cat === "750_ml" ? "750 ml" : cat === "400_ml" ? "400 ml" : "Others";
+            
             return (
-              <div
-                key={product.id}
-                className={`p-4 rounded-xl border transition-colors ${
-                  outOfStock
-                    ? "bg-slate-50 border-border/30 opacity-60"
-                    : selected > 0
-                    ? "bg-primary/5 border-primary/30"
-                    : "bg-white border-border/50 hover:border-primary/20"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  {/* Product Info */}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-foreground leading-tight">{product.name}</h4>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      {outOfStock ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">
-                          <AlertCircle className="w-3 h-3" /> No Godown Stock
-                        </span>
-                      ) : (
-                        <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                          Godown: {available} cases
-                        </span>
-                      )}
-                    </div>
-                  </div>
+              <div key={cat} className="space-y-3 mb-6">
+                <h3 className="font-bold text-xs text-primary uppercase tracking-widest border-b border-primary/20 pb-1.5 px-1">{catLabel}</h3>
+                {categoryProducts.map(product => {
+                  const stockEntry = godownStock.find(s => s.productId === product.id);
+                  const available = stockEntry?.casesAvailable ?? 0;
+                  const selected = loadItems[product.id] ?? 0;
+                  const outOfStock = available === 0;
 
-                  {/* Controls */}
-                  {outOfStock ? (
-                    <div className="text-xs text-muted-foreground italic self-center">–</div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setQty(product.id, selected - 1, available)}
-                        disabled={selected === 0}
-                        className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 disabled:opacity-30 active:scale-95 transition-all text-slate-700"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={available}
-                        value={selected === 0 ? "" : selected}
-                        onChange={e => setQty(product.id, parseInt(e.target.value) || 0, available)}
-                        placeholder="0"
-                        className="w-16 h-9 text-center font-bold rounded-lg border-border/50 text-base p-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setQty(product.id, selected + 1, available)}
-                        disabled={selected >= available}
-                        className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/90 disabled:opacity-30 active:scale-95 transition-all"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                  return (
+                    <div
+                      key={product.id}
+                      className={`p-4 rounded-xl border transition-colors ${
+                        outOfStock
+                          ? "bg-slate-50 border-border/30 opacity-60"
+                          : selected > 0
+                          ? "bg-primary/5 border-primary/30"
+                          : "bg-white border-border/50 hover:border-primary/20"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-foreground leading-tight">{product.name}</h4>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {outOfStock ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full">
+                                <AlertCircle className="w-3 h-3" /> No Godown Stock
+                              </span>
+                            ) : (
+                              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                Godown: {formatQuantity(available * (product.itemsPerCase || 1), product.itemsPerCase || 1)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {outOfStock ? (
+                          <div className="text-xs text-muted-foreground italic self-center">–</div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setQty(product.id, selected - 1, available)}
+                              disabled={selected === 0}
+                              className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center hover:bg-slate-200 disabled:opacity-30 active:scale-95 transition-all text-slate-700"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={available}
+                              value={selected === 0 ? "" : selected}
+                              onChange={e => setQty(product.id, parseInt(e.target.value) || 0, available)}
+                              placeholder="0"
+                              className="w-16 h-9 text-center font-bold rounded-lg border-border/50 text-base p-0"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setQty(product.id, selected + 1, available)}
+                              disabled={selected >= available}
+                              className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/90 disabled:opacity-30 active:scale-95 transition-all"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })}
               </div>
             );
           })}
@@ -350,13 +455,13 @@ function UnloadTruckDialog({ truckId, vehicleNumber }: { truckId: number, vehicl
 
           {truckStock.map(stockEntry => {
             const product = stockEntry.product;
-            if (!product) return null; // Should not happen
+            if (!product) return null;
 
             const available = stockEntry.casesAvailable;
             const selected = returnItems[product.id] ?? 0;
             const outOfStock = available === 0;
 
-            if (outOfStock) return null; // Only show items currently in van
+            if (outOfStock) return null;
 
             return (
               <div
@@ -368,17 +473,15 @@ function UnloadTruckDialog({ truckId, vehicleNumber }: { truckId: number, vehicl
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
-                  {/* Product Info */}
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-foreground leading-tight">{product.name}</h4>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-                        In Van: {available} cases
+                        In Van: {formatQuantity(available * (product.itemsPerCase || 1), product.itemsPerCase || 1)}
                       </span>
                     </div>
                   </div>
 
-                  {/* Controls */}
                   <div className="flex items-center gap-2">
                     <button
                       type="button"

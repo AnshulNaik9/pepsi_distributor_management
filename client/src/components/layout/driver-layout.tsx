@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { IndianRupee, Package, Banknote, LogOut, Navigation, ChevronLeft } from "lucide-react";
+import { IndianRupee, Package, Banknote, LogOut, Navigation, ChevronLeft, History } from "lucide-react";
 import { logout } from "@/lib/auth";
 
 export function DriverLayout({ children }: { children: ReactNode }) {
@@ -10,6 +10,7 @@ export function DriverLayout({ children }: { children: ReactNode }) {
     { label: "Billing", url: "/driver/billing", icon: IndianRupee },
     { label: "Inventory", url: "/driver/stock", icon: Package },
     { label: "Expenses", url: "/driver/expenses", icon: Banknote },
+    { label: "History", url: "/driver/history", icon: History },
   ];
 
   const handleLogout = () => {

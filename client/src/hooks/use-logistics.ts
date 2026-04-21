@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import type { Truck, Route, Customer, InsertTruck, InsertRoute, InsertCustomer, LoadTruckRequest, ReturnStockRequest, TruckStock } from "@shared/schema";
+import type { Truck, Route, Customer, InsertTruck, InsertRoute, InsertCustomer, LoadTruckRequest, ReturnStockRequest, TruckStock, Order } from "@shared/schema";
 
 export function useTrucks() {
   return useQuery<Truck[]>({
@@ -84,6 +84,26 @@ export function useReturnStock() {
   });
 }
 
+export function useDeleteTruck() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(buildUrl(api.trucks.delete.path, { id }), {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Failed to delete truck");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.trucks.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.godownStock.list.path] });
+    }
+  });
+}
+
 export function useRoutes() {
   return useQuery<Route[]>({
     queryKey: [api.routes.list.path],
@@ -106,6 +126,22 @@ export function useCreateRoute() {
       });
       if (!res.ok) throw new Error("Failed to create route");
       return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.routes.list.path] })
+  });
+}
+
+export function useDeleteRoute() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(buildUrl(api.routes.delete.path, { id }), {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Failed to delete route");
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.routes.list.path] })
   });
@@ -138,5 +174,55 @@ export function useCreateCustomer() {
       return res.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.customers.list.path] })
+  });
+}
+
+export function useDeleteCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(buildUrl(api.customers.delete.path, { id }), {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Failed to delete customer");
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.customers.list.path] })
+  });
+}
+
+export function useCustomerOrders(customerId: number | undefined) {
+  return useQuery<Order[]>({
+    queryKey: [api.customers.orders.path, customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const url = buildUrl(api.customers.orders.path, { id: customerId });
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch customer orders");
+      return res.json();
+    },
+    enabled: !!customerId
+  });
+}
+
+export function useResetCustomerMonthlyData() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (customerId: number) => {
+      const res = await fetch(buildUrl(api.customers.resetMonthly.path, { id: customerId }), {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Failed to reset customer data");
+      }
+      return res.json();
+    },
+    onSuccess: (_, customerId) => {
+      queryClient.invalidateQueries({ queryKey: [api.customers.orders.path, customerId] });
+      queryClient.invalidateQueries({ queryKey: [api.customers.list.path] });
+    }
   });
 }

@@ -21,12 +21,14 @@ import AdminOffers from "@/pages/admin/offers";
 import AdminOrders from "@/pages/admin/orders";
 import AdminProfitPulse from "@/pages/admin/profit-pulse";
 import AdminTopPerformers from "@/pages/admin/top-performers";
+import AdminSpecialOrder from "@/pages/admin/special-order";
 
 import DriverSelect from "@/pages/driver/select-truck";
 import DriverSelectRoute from "@/pages/driver/select-route";
 import DriverBilling from "@/pages/driver/billing";
 import DriverInventory from "@/pages/driver/inventory";
 import DriverExpenses from "@/pages/driver/expenses";
+import DriverHistory from "@/pages/driver/history";
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
@@ -81,6 +83,9 @@ function Router() {
       <Route path="/admin/orders">
         {() => <AdminGuard><AdminLayout><AdminOrders /></AdminLayout></AdminGuard>}
       </Route>
+      <Route path="/admin/special-order">
+        {() => <AdminGuard><AdminLayout><AdminSpecialOrder /></AdminLayout></AdminGuard>}
+      </Route>
       <Route path="/admin">
         {() => <AdminGuard><AdminLayout><AdminDashboard /></AdminLayout></AdminGuard>}
       </Route>
@@ -100,6 +105,9 @@ function Router() {
       </Route>
       <Route path="/driver/expenses">
         {() => <DriverGuard><DriverLayout><DriverExpenses /></DriverLayout></DriverGuard>}
+      </Route>
+      <Route path="/driver/history">
+        {() => <DriverGuard><DriverLayout><DriverHistory /></DriverLayout></DriverGuard>}
       </Route>
       <Route path="/driver">
         {() => <DriverGuard><DriverLayout><DriverBilling /></DriverLayout></DriverGuard>}

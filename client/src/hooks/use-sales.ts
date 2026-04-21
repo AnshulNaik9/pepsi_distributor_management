@@ -118,6 +118,49 @@ export function useCheckout() {
   });
 }
 
+export function useDeleteOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(api.orders.delete.path.replace(":id", id.toString()), {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.trucks.stock.path] });
+      queryClient.invalidateQueries({ queryKey: [api.customers.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.godownStock.list.path] });
+    }
+
+  });
+}
+
+export function useUpdateOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+      const res = await fetch(api.orders.update.path.replace(":id", id.toString()), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Update failed");
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.trucks.stock.path] });
+      queryClient.invalidateQueries({ queryKey: [api.customers.list.path] });
+    }
+  });
+}
+
 export function useExpenses() {
   return useQuery<Expense[]>({
     queryKey: [api.expenses.list.path],

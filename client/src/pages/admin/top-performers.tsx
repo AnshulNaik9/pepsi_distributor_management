@@ -4,6 +4,7 @@ import { useOrders } from "@/hooks/use-sales";
 import { useRoutes } from "@/hooks/use-logistics";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { formatQuantity } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Trophy, Crown, Medal, Star, Search, ChevronRight,
@@ -37,8 +38,10 @@ export default function TopPerformersPage() {
     routes.find(r => r.id === routeId)?.name || "Unknown";
 
   // Build customer stats
-  const customerStats: CustomerStats[] = customers.map(customer => {
-    const customerOrders = orders.filter((o: Order) => o.customerId === customer.id);
+  const customerStats: CustomerStats[] = customers
+    .filter(customer => !customer.isDeleted)
+    .map(customer => {
+      const customerOrders = orders.filter((o: Order) => o.customerId === customer.id && !o.isArchived);
     const totalPurchases = customerOrders.reduce((sum, o) => sum + o.totalAmount, 0);
     const orderCount = customerOrders.length;
     const avgOrderValue = orderCount > 0 ? totalPurchases / orderCount : 0;
@@ -70,6 +73,7 @@ export default function TopPerformersPage() {
 
   // Sort by total purchases (top performers first)
   const ranked = [...customerStats]
+    .filter(cs => cs.totalPurchases > 0)
     .sort((a, b) => b.totalPurchases - a.totalPurchases)
     .filter(cs => {
       if (!search) return true;
@@ -310,7 +314,10 @@ export default function TopPerformersPage() {
                                   {item.isFree ? "🎁 " : ""}{item.name}
                                 </span>
                                 <span className="font-medium">
-                                  {item.isFree ? "FREE" : `×${item.qty}`}
+                                  {item.isFree 
+                                    ? formatQuantity(item.qty, 12) // Default to 12 if unsure, but usually this is just a label
+                                    : `${item.qty} cs`
+                                  }
                                 </span>
                               </div>
                             ))}

@@ -4,3 +4,8 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+.env
+mobile-app/backend/.env
+mobile-app/mobile/.env
+mobile-app/**/node_modules
+sqlite.db

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PackagePlus, Warehouse } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { formatQuantity } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function GodownStockPage() {
@@ -87,8 +88,10 @@ export default function GodownStockPage() {
                 <div className="font-bold text-lg">{product.name}</div>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-black text-slate-800">{cases}</div>
-                <div className="text-xs font-semibold text-muted-foreground uppercase">Cases</div>
+                <div className="text-2xl font-black text-slate-800">
+                  {formatQuantity(cases * (product.itemsPerCase || 1), product.itemsPerCase || 1)}
+                </div>
+                <div className="text-[10px] font-semibold text-muted-foreground uppercase">Godown Stock</div>
               </div>
             </Card>
           )

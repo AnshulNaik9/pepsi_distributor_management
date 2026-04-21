@@ -75,35 +75,40 @@ export function useBluetoothPrinter() {
     
     // Header
     output += '\x1B\x61\x01'; // Center alignment
-    output += '\x1D\x21\x11'; // Double width/height
-    output += 'INVOICE\n'; // Company Name
+    output += '\x1D\x21\x01'; // Slightly larger text
+    output += 'CS MARKETING\n';
     output += '\x1D\x21\x00'; // Normal text
+    output += 'INVOICE\n';
     output += `Order #${order.id}\n`;
-    output += `Date: ${new Date((order as any).date).toLocaleString()}\n`;
-    output += `Customer: ${order.customer?.name || 'Walk-in Shop'}\n`;
+    output += `${new Date((order as any).date || Date.now()).toLocaleDateString()}\n`;
+    output += '--------------------------------\n';
+    output += '\x1B\x61\x00'; // Left align
+    output += `Shop Name - ${order.customer?.name || 'Walk-in Shop'}\n`;
+    if (order.customer?.phone) output += `Phone - ${order.customer.phone}\n`;
     output += '--------------------------------\n';
     
     // Items Header
-    output += '\x1B\x61\x00'; // Left align
-    output += padRight('Item', 16) + padLeft('Qty', 6) + padLeft('Amt', 10) + '\n';
-    output += '--------------------------------\n';
+    output += 'Items\n';
 
     // Items
     let total = 0;
     order.items?.forEach(item => {
-      const name = padRight(item.product?.name || 'Product', 16);
-      const qty = padLeft(item.quantity.toString(), 6);
-      const amt = item.isFree ? padLeft('FREE', 10) : padLeft(`Rs${(item.product?.price || 0) * item.quantity}`, 10);
-      output += `${name}${qty}${amt}\n`;
-      if (!item.isFree) total += (item.product?.price || 0) * item.quantity;
+      const qtyText = item.isFree
+        ? `${item.quantity}`
+        : `${Math.round(item.quantity * (item.product?.itemsPerCase || 1))}`;
+      const lineLabel = `${item.product?.name || 'Product'} x ${qtyText}`;
+      const unitPrice = (item as any).customPrice || item.product?.price || 0;
+      const lineAmt = item.isFree ? 'FREE' : `Rs ${Math.round(unitPrice * item.quantity)}`;
+
+      output += padRight(lineLabel, 22) + padLeft(lineAmt, 10) + '\n';
+      if (!item.isFree) total += Math.round(unitPrice * item.quantity);
     });
 
     // Total
     output += '--------------------------------\n';
-    output += '\x1D\x21\x01'; // Double height
-    output += padRight('TOTAL:', 16) + padLeft(`Rs ${total}`, 16) + '\n';
+    output += '\x1D\x21\x00';
+    output += `Total: Rs ${order.totalAmount ?? total}\n`;
     output += '\x1D\x21\x00'; // Normal text
-    output += `Paid via: ${order.paymentMode}\n`;
     output += '\n\n';
     
     // Footer
