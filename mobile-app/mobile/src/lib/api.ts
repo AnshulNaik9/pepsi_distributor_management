@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-let CURRENT_API_URL = 'http://192.168.1.2:8082';
+let CURRENT_API_URL = 'https://pepsi-distributor-backend-1.onrender.com';
 
 export const setApiUrl = (url: string) => { CURRENT_API_URL = url; };
 export const getApiUrl = () => CURRENT_API_URL;
