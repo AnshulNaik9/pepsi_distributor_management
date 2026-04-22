@@ -39,7 +39,15 @@ const DriverTabs = createBottomTabNavigator();
 
 const navTheme = {
   ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, background: Colors.bgDark, card: Colors.bgSurface, text: Colors.textPrimary, border: Colors.border, primary: Colors.primary, notification: Colors.danger },
+  colors: { 
+    ...DefaultTheme.colors, 
+    background: '#F8FAFC', 
+    card: '#FFFFFF', 
+    text: '#1E293B', 
+    border: '#E2E8F0', 
+    primary: Colors.primary, 
+    notification: Colors.danger 
+  },
 };
 
 // ─── Custom Admin Drawer ─────────────────────────────────────────────
@@ -94,9 +102,10 @@ function AdminNavigator() {
         drawerActiveBackgroundColor: '#4F46E5',
         drawerInactiveTintColor: '#64748B',
         drawerLabelStyle: {
-          fontWeight: '700',
-          fontSize: 12,
+          fontWeight: '800',
+          fontSize: 13,
           marginLeft: -10,
+          color: '#1E293B', // Ensure visible labels
         },
         drawerItemStyle: {
           borderRadius: 8,
@@ -298,7 +307,7 @@ const styles = StyleSheet.create({
   logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   drawerLogo: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#4F46E5', alignItems: 'center', justifyContent: 'center', ...Shadows.sm },
   drawerTitle: { fontSize: 18, fontWeight: '900', color: '#0F172A', letterSpacing: -0.5 },
-  sectionLabel: { fontSize: 9, fontWeight: '800', color: '#94A3B8', letterSpacing: 1.0, marginBottom: 4 },
+  sectionLabel: { fontSize: 10, fontWeight: '900', color: '#475569', letterSpacing: 1.2, marginBottom: 8, textTransform: 'uppercase' },
   drawerList: { flex: 1, paddingHorizontal: 10, marginTop: 0 },
   drawerFooter: { padding: 12, borderTopWidth: 1, borderTopColor: '#F8FAFC' },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },

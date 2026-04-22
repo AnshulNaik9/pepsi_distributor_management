@@ -514,14 +514,13 @@ export default function BillingScreen() {
 
                   return (
                     <View key={product.id} style={[styles.productCard, qtyBtls > 0 && styles.productCardActive]}>
-                      <Image 
-                        source={{ uri: product.imageUrl || 'https://via.placeholder.com/80' }} 
-                        style={styles.productImage} 
-                        resizeMode="contain"
-                      />
-                      <View style={styles.productLeft}>
-                        <Text style={styles.productName}>{product.name}</Text>
-                        <View style={styles.priceRow}>
+                      <View style={styles.imageColumn}>
+                        <Image 
+                          source={{ uri: product.imageUrl || 'https://via.placeholder.com/80' }} 
+                          style={styles.productImage} 
+                          resizeMode="contain"
+                        />
+                        <View style={styles.priceRowUnder}>
                           <Text style={styles.priceLabel}>₹</Text>
                           <TextInput
                               style={styles.priceInput}
@@ -534,19 +533,23 @@ export default function BillingScreen() {
                               keyboardType="numeric"
                               underlineColorAndroid="transparent"
                             />
-                          <Text style={styles.priceUnit}>/ case</Text>
                         </View>
+                      </View>
 
+                      <View style={styles.productLeft}>
+                        <Text style={styles.productName}>{product.name}</Text>
+                        <Text style={{ fontSize: 9, color: Colors.textMuted, fontWeight: '700', marginTop: 2 }}>/ case</Text>
+                        
                         <View style={styles.stockStatusContainer}>
-                          <View style={styles.stockStatusMini}>
-                            <Ionicons name="business" size={10} color="#64748B" />
-                            <Text style={styles.stockStatusLabel}>W:</Text>
-                            <Text style={styles.stockStatusVal}>{formatStock(godownQty, itemsPerCase)}</Text>
-                          </View>
                           <View style={[styles.stockStatusMini, { backgroundColor: Colors.primary + '10' }]}>
-                            <Ionicons name="bus" size={10} color={Colors.primary} />
+                            <Ionicons name="bus" size={12} color={Colors.primary} />
                             <Text style={[styles.stockStatusLabel, { color: Colors.primary }]}>T:</Text>
                             <Text style={[styles.stockStatusVal, { color: Colors.primary }]}>{formatStock(truckQty, itemsPerCase)}</Text>
+                          </View>
+                          <View style={styles.stockStatusMini}>
+                            <Ionicons name="business" size={12} color="#64748B" />
+                            <Text style={styles.stockStatusLabel}>W:</Text>
+                            <Text style={styles.stockStatusVal}>{formatStock(godownQty, itemsPerCase)}</Text>
                           </View>
                         </View>
 
@@ -574,16 +577,36 @@ export default function BillingScreen() {
                       <View style={styles.productRight}>
                         <View style={styles.stepperContainer}>
                           <Text style={styles.stepperLabel}>CS</Text>
-                          <TouchableOpacity style={styles.stepperBtn} onPress={() => handleQty(product.id, -itemsPerCase, totalQtyCases * itemsPerCase)}><Ionicons name="remove-outline" size={16} color="#1E293B"/></TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.stepperBtn, { backgroundColor: '#F1F5F9' }]} 
+                            onPress={() => handleQty(product.id, -itemsPerCase, totalQtyCases * itemsPerCase)}
+                          >
+                            <Ionicons name="remove-outline" size={20} color="#1E293B"/>
+                          </TouchableOpacity>
                           <Text style={styles.stepperVal}>{Math.floor(qtyBtls / itemsPerCase)}</Text>
-                          <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => handleQty(product.id, itemsPerCase, totalQtyCases * itemsPerCase)}><Ionicons name="add-outline" size={16} color="#fff"/></TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.stepperBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]} 
+                            onPress={() => handleQty(product.id, itemsPerCase, totalQtyCases * itemsPerCase)}
+                          >
+                            <Ionicons name="add-outline" size={20} color="#fff"/>
+                          </TouchableOpacity>
                         </View>
 
                         <View style={[styles.stepperContainer, { marginTop: 6 }]}>
                           <Text style={styles.stepperLabel}>BTL</Text>
-                          <TouchableOpacity style={styles.stepperBtn} onPress={() => handleQty(product.id, -1, totalQtyCases * itemsPerCase)}><Ionicons name="remove-outline" size={16} color="#1E293B"/></TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.stepperBtn, { backgroundColor: '#F1F5F9' }]} 
+                            onPress={() => handleQty(product.id, -1, totalQtyCases * itemsPerCase)}
+                          >
+                            <Ionicons name="remove-outline" size={20} color="#1E293B"/>
+                          </TouchableOpacity>
                           <Text style={styles.stepperVal}>{Math.round(qtyBtls % itemsPerCase)}</Text>
-                          <TouchableOpacity style={[styles.stepperBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]} onPress={() => handleQty(product.id, 1, totalQtyCases * itemsPerCase)}><Ionicons name="add-outline" size={16} color="#fff"/></TouchableOpacity>
+                          <TouchableOpacity 
+                            style={[styles.stepperBtn, { backgroundColor: Colors.primary, borderColor: Colors.primary }]} 
+                            onPress={() => handleQty(product.id, 1, totalQtyCases * itemsPerCase)}
+                          >
+                            <Ionicons name="add-outline" size={20} color="#fff"/>
+                          </TouchableOpacity>
                         </View>
 
                         {qtyBtls > 0 && (
@@ -923,19 +946,21 @@ const styles = StyleSheet.create({
   products: { flex: 1 },
   productCard: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: BorderRadius.xl, padding: Spacing.md, marginBottom: Spacing.md, borderWidth: 1, borderColor: '#E2E8F0', ...Shadows.sm },
   productCardActive: { borderColor: Colors.primary + '60', backgroundColor: Colors.primaryBg },
-  productImage: { width: 70, height: 70, borderRadius: BorderRadius.md, backgroundColor: '#F1F5F9', marginRight: Spacing.md },
+  productImage: { width: 70, height: 70, borderRadius: BorderRadius.md, backgroundColor: '#F1F5F9' },
+  imageColumn: { marginRight: Spacing.md, alignItems: 'center', width: 70, gap: 4 },
+  priceRowUnder: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 4, paddingHorizontal: 4, height: 18, width: '100%', justifyContent: 'center' },
+  stockStatusContainer: { flexDirection: 'column', gap: 4, marginTop: 8, alignItems: 'flex-start' },
   productLeft: { flex: 1, paddingRight: Spacing.sm },
   productName: { fontSize: FontSize.lg, fontWeight: '800', color: '#1E293B', marginBottom: 6 },
   
-  priceRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 8, paddingHorizontal: 8, height: 26, alignSelf: 'flex-start', marginTop: 2 },
-  priceLabel: { fontSize: 11, fontWeight: '800', color: Colors.primary },
-  priceInput: { fontSize: 13, fontWeight: '800', color: Colors.primary, paddingHorizontal: 4, paddingVertical: 0, margin: 0, minWidth: 40, textAlign: 'center' },
-  priceUnit: { fontSize: 11, color: Colors.textMuted, fontWeight: '700' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 4, paddingHorizontal: 3, height: 18, alignSelf: 'flex-start', marginTop: 2 },
+  priceLabel: { fontSize: 9, fontWeight: '800', color: Colors.primary },
+  priceInput: { fontSize: 10, fontWeight: '900', color: Colors.primary, paddingHorizontal: 0, paddingVertical: 0, margin: 0, minWidth: 15, textAlign: 'center' },
+  priceUnit: { fontSize: 7, color: Colors.textMuted, fontWeight: '700' },
 
-  stockStatusContainer: { flexDirection: 'row', gap: 6, marginTop: 8 },
-  stockStatusMini: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
-  stockStatusLabel: { fontSize: 9, fontWeight: '800', color: Colors.textMuted, textTransform: 'uppercase' },
-  stockStatusVal: { fontSize: 9, fontWeight: '900', color: '#1E293B' },
+  stockStatusMini: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  stockStatusLabel: { fontSize: 11, fontWeight: '800', color: Colors.textMuted, textTransform: 'uppercase' },
+  stockStatusVal: { fontSize: 11, fontWeight: '900', color: '#1E293B' },
 
   freeOverlay: { marginTop: Spacing.md, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   freeLabelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#DBEAFE', paddingHorizontal: 8, paddingVertical: 4, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: '#BFDBFE' },
@@ -947,8 +972,8 @@ const styles = StyleSheet.create({
   productRight: { alignItems: 'flex-end', justifyContent: 'center' },
   stepperContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', padding: 3, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0' },
   stepperLabel: { fontSize: 10, fontWeight: '800', color: Colors.textMuted, width: 28, textAlign: 'center' },
-  stepperBtn: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center', ...Shadows.sm },
-  stepperVal: { width: 30, textAlign: 'center', fontSize: FontSize.md, fontWeight: '800', color: '#1E293B' },
+  stepperBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#94A3B8', alignItems: 'center', justifyContent: 'center', ...Shadows.sm },
+  stepperVal: { width: 40, textAlign: 'center', fontSize: 16, fontWeight: '800', color: '#1E293B' },
   itemTotal: { fontSize: 11, fontWeight: '900', color: Colors.primary, marginTop: 6, paddingRight: 4 },
 
   cartBarContainer: { position: 'absolute', bottom: 24, left: Spacing.md, right: Spacing.md, zIndex: 100 },

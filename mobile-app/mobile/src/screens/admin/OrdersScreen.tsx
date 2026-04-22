@@ -20,7 +20,11 @@ export default function OrdersScreen() {
   const { data: customers = [] } = useCustomers();
   const deleteOrder = useDeleteOrder();
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('today');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   const [deleteId, setDeleteId] = useState<any>(null);
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -30,6 +34,13 @@ export default function OrdersScreen() {
     const d = new Date(o.date);
     if (filter === 'today') return d >= today;
     if (filter === 'yesterday') return d >= yesterday && d < today;
+    if (filter === 'selectedDate') {
+      const start = new Date(selectedDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(selectedDate);
+      end.setHours(23, 59, 59, 999);
+      return d >= start && d <= end;
+    }
     return true;
   };
 
@@ -80,13 +91,31 @@ export default function OrdersScreen() {
       </View>
 
       {/* Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: Spacing.md, gap: 8 }}>
-        {['all', 'today', 'yesterday'].map(f => (
-          <TouchableOpacity key={f} style={[styles.filterChip, filter === f && styles.filterChipActive]} onPress={() => setFilter(f)}>
-            <Text style={[styles.filterText, filter === f && { color: Colors.primary }]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={{ backgroundColor: '#fff' }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: Spacing.md, gap: 8, alignItems: 'center' }}>
+          {['today', 'yesterday', 'all', 'selectedDate'].map(f => (
+            <TouchableOpacity key={f} style={[styles.filterChip, filter === f && styles.filterChipActive]} onPress={() => setFilter(f)}>
+              <Text style={[styles.filterText, filter === f && { color: Colors.primary }]}>
+                {f === 'selectedDate' ? 'Specific Date' : f.charAt(0).toUpperCase() + f.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {filter === 'selectedDate' && (
+          <View style={styles.datePickerRow}>
+            <Text style={styles.dateLabel}>Select Date:</Text>
+            <TextInput
+              style={styles.dateInput}
+              value={selectedDate}
+              onChangeText={setSelectedDate}
+              placeholder="YYYY-MM-DD"
+              // @ts-ignore - web only prop
+              type="date"
+            />
+          </View>
+        )}
+      </View>
 
       {/* Search */}
       <View style={styles.searchWrap}>
@@ -184,10 +213,13 @@ const styles = StyleSheet.create({
   summaryText: { fontSize: 11, color: '#64748B', fontWeight: '600' },
   summaryCount: { fontWeight: '900', color: '#1E293B' },
   summaryAmt: { fontWeight: '900', color: Colors.primary },
-  filterRow: { maxHeight: 44, paddingVertical: 6, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: 'transparent' },
+  filterRow: { height: 48, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' },
   filterChipActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryBg },
-  filterText: { fontSize: 11, color: '#64748B', fontWeight: '700' },
+  filterText: { fontSize: 12, color: '#64748B', fontWeight: '700' },
+  datePickerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#F8FAFC', borderBottomWidth: 1, borderBottomColor: '#F1F5F9', gap: 12 },
+  dateLabel: { fontSize: 12, fontWeight: '700', color: '#64748B' },
+  dateInput: { flex: 1, backgroundColor: '#fff', height: 36, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', px: 10, fontSize: 13, color: '#1E293B', textAlign: 'center' },
   searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', margin: 12, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', height: 40, ...Shadows.sm },
   search: { flex: 1, color: '#1E293B', fontSize: 13, paddingHorizontal: 12 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 12, marginHorizontal: 12, marginBottom: 10, borderWidth: 1, borderColor: '#F1F5F9', borderLeftWidth: 3, ...Shadows.sm },

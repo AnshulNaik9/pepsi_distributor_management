@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-let CURRENT_API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:8082' : 'http://localhost:8082';
+let CURRENT_API_URL = 'http://192.168.1.2:8082';
 
 export const setApiUrl = (url: string) => { CURRENT_API_URL = url; };
 export const getApiUrl = () => CURRENT_API_URL;
@@ -19,12 +19,21 @@ export async function apiRequest(method: string, url: string, data?: any) {
     const res = await fetch(fullUrl, options);
     console.log(`[API] Response: ${res.status} from ${url}`);
 
+    const contentType = res.headers.get('content-type');
     if (!res.ok) {
       const text = await res.text().catch(() => res.statusText);
       console.error(`[API] Error ${res.status}: ${text}`);
       throw new Error(`${res.status}: ${text}`);
     }
+    
     if (res.status === 204) return null;
+    
+    if (contentType && !contentType.includes('application/json')) {
+      const text = await res.text();
+      console.error(`[API] Expected JSON but received ${contentType}. Content:`, text.substring(0, 100));
+      throw new Error('Server returned an invalid response (HTML instead of JSON). Is the backend running?');
+    }
+
     const json = await res.json();
     console.log(`[API] Data: Received ${Array.isArray(json) ? json.length : '1'} item(s)`);
     return json;

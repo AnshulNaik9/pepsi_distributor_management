@@ -96,20 +96,29 @@ export default function ProductsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    const price = parseInt(formData.price, 10);
+    const purchasePrice = parseInt(formData.purchasePrice, 10) || 0;
+    const itemsPerCase = parseInt(formData.itemsPerCase, 10);
+    const stockQty = parseInt(formData.initialStock, 10);
+
+    if (isNaN(price)) return toast({ title: "Error", description: "Invalid selling price", variant: "destructive" });
+    if (isNaN(itemsPerCase)) return toast({ title: "Error", description: "Invalid items per case", variant: "destructive" });
+
     createProduct(
       {
         name: formData.name,
-        price: parseInt(formData.price, 10),
-        purchasePrice: parseInt(formData.purchasePrice, 10) || 0,
+        price,
+        purchasePrice,
         imageUrl: formData.imageUrl || undefined,
         unit: formData.unit,
         quantityPerUnit: formData.quantityPerUnit,
-        itemsPerCase: parseInt(formData.itemsPerCase, 10),
+        itemsPerCase,
         category: formData.category,
       },
       {
         onSuccess: (newProduct) => {
-          const stockQty = parseInt(formData.initialStock, 10);
           if (stockQty > 0) {
             addStock(
               { productId: newProduct.id, quantity: stockQty },
@@ -117,6 +126,10 @@ export default function ProductsPage() {
                 onSuccess: () => {
                   toast({ title: "Product created with initial stock" });
                 },
+                onError: (err) => {
+                  console.error("Stock add failed:", err);
+                  toast({ title: "Product created", description: "But failed to add initial stock.", variant: "destructive" });
+                }
               }
             );
           } else {
@@ -139,6 +152,10 @@ export default function ProductsPage() {
             category: "others",
           });
         },
+        onError: (err: any) => {
+          console.error("Product creation error:", err);
+          toast({ title: "Error", description: err.message || "Failed to create product", variant: "destructive" });
+        }
       }
     );
   };

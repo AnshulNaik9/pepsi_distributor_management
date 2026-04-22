@@ -20,8 +20,8 @@ const UI = {
   red_grad: ['#DC2626', '#E11D48'],
   text_slate_900: '#0F172A',
   text_slate_800: '#1E293B',
-  text_slate_500: '#64748B',
-  text_slate_400: '#94A3B8',
+  text_slate_500: '#334155', // Darkened for visibility
+  text_slate_400: '#475569', // Darkened for visibility
 };
 
 function FinancialCard({ title, value, subtitle, icon, color, width }: any) {

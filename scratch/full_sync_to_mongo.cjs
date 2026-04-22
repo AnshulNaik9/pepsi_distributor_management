@@ -9,7 +9,7 @@ const { MongoClient } = require('mongodb');
 const path = require('path');
 
 const SQLITE_DB_PATH = path.join(process.cwd(), 'sqlite.db');
-const MONGODB_URI = 'mongodb://127.0.0.1:27017/distrisys';
+const MONGODB_URI = 'mongodb://naikanshu9_db_user:Karwar%40123@ac-izwzb8r-shard-00-00.4axkjzl.mongodb.net:27017,ac-izwzb8r-shard-00-01.4axkjzl.mongodb.net:27017,ac-izwzb8r-shard-00-02.4axkjzl.mongodb.net:27017/distrisys?ssl=true&authSource=admin&retryWrites=true&w=majority';
 
 function parseDate(val) {
   if (!val) return new Date();

@@ -16,8 +16,8 @@ const UI = {
   amber_grad: ['#FFFBEB', '#FEF3C7'],
   text_slate_900: '#0F172A',
   text_slate_800: '#1E293B',
-  text_slate_500: '#64748B',
-  text_slate_400: '#94A3B8',
+  text_slate_500: '#475569', // Darkened
+  text_slate_400: '#64748B', // Darkened
   primary: '#4F46E5',
 };
 
@@ -49,9 +49,12 @@ export default function TopPerformersScreen() {
   const { data: routes = [] } = useRoutes();
 
   const customerStats = customers
-    .filter((c: any) => !c.isDeleted)
     .map((customer: any) => {
-      const cOrders = orders.filter((o: any) => o.customerId === customer._id);
+      const cOrders = orders.filter((o: any) => {
+        const oCid = o.customerId?._id || o.customerId?.id || o.customerId;
+        const cId = customer._id || customer.id;
+        return oCid === cId;
+      });
       const totalPurchases = cOrders.reduce((sum: number, o: any) => sum + o.totalAmount, 0);
       return { ...customer, totalPurchases, orderCount: cOrders.length };
     }).sort((a, b) => b.totalPurchases - a.totalPurchases);
@@ -98,7 +101,7 @@ export default function TopPerformersScreen() {
           const border = idx === 0 ? '#FEF3C7' : '#F1F5F9';
 
           return (
-            <TouchableOpacity key={item._id} style={[styles.rankCard, { backgroundColor: bg, borderColor: border }]} activeOpacity={0.8}>
+            <TouchableOpacity key={item._id || item.id} style={[styles.rankCard, { backgroundColor: bg, borderColor: border }]} activeOpacity={0.8}>
               <View style={styles.rankRow}>
                 <View style={[styles.rankBadge, { backgroundColor: isTop3 ? bg : '#F8FAFC' }]}>
                   {idx === 0 ? <Ionicons name="ribbon" size={20} color="#D97706" /> : 
@@ -110,7 +113,7 @@ export default function TopPerformersScreen() {
                 <View style={styles.custInfo}>
                   <Text style={styles.custName} numberOfLines={1}>{item.name}</Text>
                   <View style={styles.custMeta}>
-                    <Text style={styles.metaText}>{routes.find(r => r._id === item.routeId)?.name || 'General Route'}</Text>
+                    <Text style={styles.metaText}>{routes.find(r => (r._id || r.id) === item.routeId)?.name || 'General Route'}</Text>
                     <Text style={styles.dot}>·</Text>
                     <Text style={styles.metaText}>{item.orderCount} orders</Text>
                   </View>
