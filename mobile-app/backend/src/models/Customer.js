@@ -2,8 +2,8 @@ const mongoose = require('mongoose');
 
 const customerSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  phone: { type: String, required: true },
-  routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Route', required: true },
+  phone: { type: String, default: '' },
+  routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Route', required: false },
   creditBalance: { type: Number, default: 0 },
   address: { type: String, required: true },
   isDeleted: { type: Boolean, default: false },

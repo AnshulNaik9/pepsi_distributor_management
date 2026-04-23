@@ -19,6 +19,19 @@ function formatStock(casesAvailable: number, itemsPerCase: number): string {
   return '0';
 }
 
+// Format a qty-in-bottles value as "Xcs Ybtl"
+function formatQty(totalBottles: number, itemsPerCase: number): string {
+  const ipc = itemsPerCase || 1;
+  const btls = Math.round(totalBottles);
+  const cs = Math.floor(btls / ipc);
+  const rem = btls % ipc;
+  if (cs > 0 && rem > 0) return `${cs}cs ${rem}btl`;
+  if (cs > 0) return `${cs}cs`;
+  if (rem > 0) return `${rem}btl`;
+  return '0';
+}
+
+
 export default function BillingScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -171,7 +184,7 @@ export default function BillingScreen() {
 
       offers.forEach((offer: any) => {
         if (String(offer.buyProductId) === id && cases >= offer.buyQuantity) {
-          const offerMultiplier = Math.floor(cases / offer.buyQuantity);
+          const offerMultiplier = Math.floor(cases / offer.buyQuantity + 0.001);
           const quantityFromOffer = offerMultiplier * offer.freeQuantity;
           if (quantityFromOffer > pFree) {
             pFree = quantityFromOffer;
@@ -193,7 +206,7 @@ export default function BillingScreen() {
       }
     });
 
-    const globalPromoFreeBottles = Math.floor(totalPromoCases) * 2;
+    const globalPromoFreeBottles = Math.floor(totalPromoCases + 0.001) * 2;
     if (globalPromoFreeBottles > 0 && fallbackAquafinaId) {
       freeItems[String(fallbackAquafinaId)] = (freeItems[String(fallbackAquafinaId)] || 0) + globalPromoFreeBottles;
     }
@@ -238,63 +251,138 @@ export default function BillingScreen() {
 
   const printReceipt = async (orderData: any) => {
     try {
-      const dateStr = new Date(orderData.date || Date.now()).toLocaleDateString();
+      const now = new Date(orderData.date || Date.now());
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mon = months[now.getMonth()];
+      const yyyy = now.getFullYear();
+      const hh = now.getHours();
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ampm = hh >= 12 ? 'pm' : 'am';
+      const hh12 = hh % 12 || 12;
+      const dateStr = `${dd}-${mon}-${yyyy}`;
+
       const custName = orderData.customer?.name || 'Walk-in Shop';
-      const orderId = orderData.orderNumber || orderData.id || 'N/A';
+      const rawOrderId = orderData.orderNumber || orderData.id || 'N/A';
+      const orderId = rawOrderId;
+      const payMode = orderData.paymentMode || 'Cash';
       
-      const itemRows = orderData.items?.map((item: any) => {
-        const qtyText = item.isFree
-          ? `${item.quantity}btls`
-          : `${item.quantity}cs`;
+      const consolidated = new Map();
+      (orderData.items || []).forEach((item: any) => {
+        const pid = String(item.product?._id || item.productId?._id || item.productId || item.product?.id || item.id || Math.random());
+        const ipc = item.product?.itemsPerCase || 1;
+        const btls = item.isFree ? item.quantity : Math.round(item.quantity * ipc);
+        const rate = item.isFree ? 0 : (item.customPrice ?? item.product?.price ?? 0);
+        const amt = item.isFree ? 0 : Math.round(rate * item.quantity);
         
-        const name = item.product?.name || 'Item';
-        const unitPrice = item.customPrice !== undefined ? item.customPrice : (item.product?.price || 0);
-        const amtText = item.isFree ? 'FREE' : `₹${Math.round(unitPrice * item.quantity)}`;
+        if (consolidated.has(pid)) {
+          const ext = consolidated.get(pid);
+          ext.btls += btls;
+          ext.amt += amt;
+        } else {
+          consolidated.set(pid, {
+            name: (item.product?.name || 'Item'),
+            btls,
+            amt,
+            rate: Math.round(rate),
+            ipc,
+            isFree: item.isFree || false
+          });
+        }
+      });
+
+      const itemRows = Array.from(consolidated.values())
+        .filter((item: any) => {
+          // Hide Aquafina 1L free bottles from print only
+          const nameLC = item.name.toLowerCase();
+          if (item.isFree && (nameLC.includes('aquafina') || nameLC.includes('aqua fina'))) return false;
+          return true;
+        })
+        .map((item: any) => {
+        const qtyText = formatQty(item.btls, item.ipc);
+        const rateText = item.isFree ? '-' : item.rate.toLocaleString('en-IN');
+        const amtText = item.isFree ? 'FREE' : item.amt.toLocaleString('en-IN');
 
         return `
-          <tr>
-            <td style="padding: 2px 0;">${name} x ${qtyText}</td>
-            <td style="text-align:right; padding: 2px 0;">${amtText}</td>
-          </tr>
-        `;
+        <tr>
+          <td style="padding:0.5mm 0 0.2mm 0; word-break:break-word; font-weight:bold; font-size:5.5pt; vertical-align:top;">${item.name}</td>
+          <td style="padding:0.5mm 0 0.2mm 0; text-align:center; white-space:nowrap; font-size:5.5pt; vertical-align:top;">${qtyText}</td>
+          <td style="padding:0.5mm 0 0.2mm 0; text-align:right; white-space:nowrap; font-size:5.5pt; vertical-align:top;">${rateText}</td>
+          <td style="padding:0.5mm 0 0.2mm 0; text-align:right; white-space:nowrap; font-weight:bold; font-size:5.5pt; vertical-align:top;">${amtText}</td>
+        </tr>`;
       }).join('');
+
+      const totalFormatted = Math.round(orderData.totalAmount || 0).toLocaleString('en-IN');
+
+      // Pepsi globe logo rendered as inline SVG for reliable thermal printing
+      const pepsiLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="35" height="35" style="display:block;margin:0 auto;">
+        <circle cx="50" cy="50" r="48" fill="#000" stroke="#000" stroke-width="2"/>
+        <path d="M2,50 Q25,35 50,42 Q75,49 98,35 L98,50 Q75,65 50,58 Q25,51 2,65 Z" fill="#fff"/>
+        <path d="M2,50 Q25,51 50,58 Q75,65 98,50 L98,50 A48,48 0 0,1 2,50 Z" fill="#333"/>
+      </svg>`;
 
       const htmlContent = `
         <html>
           <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
             <style>
-              @page { size: 50.8mm auto; margin: 0; }
-              body { 
-                margin: 0; padding: 2mm; width: 46.8mm;
-                font-family: 'Courier New', Courier, monospace; color: #000;
+              @page { size: 48mm auto; margin: 0mm; }
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body {
+                width: 48mm;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 6pt;
+                line-height: 1.15;
+                color: #000;
+                padding: 0.5mm 1.5mm;
               }
-              .receipt { font-size: 10px; line-height: 1.1; }
               .center { text-align: center; }
-              .bold { font-weight: 700; }
-              .line { border-top: 1px dashed #ccc; margin: 4px 0; }
+              .bold { font-weight: bold; }
+              .title { font-size: 9pt; font-weight: bold; letter-spacing: 0.5px; margin: 0; }
+              .brand { font-size: 7pt; letter-spacing: 1.5px; margin: 0; }
+              .subtitle { font-size: 5.5pt; font-style: italic; white-space: nowrap; margin: 0; }
+              .divider { border-top: 1px dashed #000; margin: 1mm 0; }
+              .info-line { font-size: 6pt; margin: 0.3mm 0; }
+              .total-row { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 8pt; padding: 0; margin: 0; }
+              .footer { font-style: italic; font-size: 5.5pt; margin: 0.3mm 0; }
               table { width: 100%; border-collapse: collapse; }
-              .total-row { border-top: 1px dashed #ccc; margin-top: 3px; padding-top: 3px; display: flex; justify-content: space-between; font-weight: 700; }
+              th { font-size: 5.5pt; font-weight: bold; text-align: left; padding: 0.3mm 0; border-bottom: 1px dashed #000; }
+              th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: right; }
             </style>
           </head>
           <body>
-            <div class="receipt">
-              <div class="center bold" style="font-size:12px;">CS MARKETING</div>
-              <div class="line"></div>
-              <div class="center bold">INVOICE</div>
-              <div class="center">Order #${orderId}</div>
-              <div class="center">${dateStr}</div>
-              <div class="line"></div>
-              <div>Shop Name - ${custName}</div>
-              <div class="line"></div>
-              <div class="bold">Items</div>
-              <table style="width:100%">${itemRows}</table>
-              <div class="line"></div>
-              <div class="total-row">
-                <span>Total</span>
-                <span>₹${orderData.totalAmount}</span>
-              </div>
+            <div class="center">
+              ${pepsiLogoSvg}
             </div>
+            <p class="center brand">PEPSI</p>
+            <p class="center title">CS MARKETING</p>
+            <p class="center subtitle">Authorized Pepsi Distributor</p>
+            <div class="divider"></div>
+            <p class="info-line">Invoice: <b>${orderId}</b></p>
+            <p class="info-line">Date: ${dateStr}</p>
+            <p class="info-line">Shop: <b>${custName}</b></p>
+            <div class="divider"></div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Item</th>
+                  <th style="text-align:right;">Qty</th>
+                  <th style="text-align:right;">Rate</th>
+                  <th style="text-align:right;">Amt</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemRows}
+              </tbody>
+            </table>
+            <div class="divider"></div>
+            <div class="total-row">
+              <span>TOTAL</span>
+              <span>${totalFormatted}</span>
+            </div>
+            <div class="divider"></div>
+            <p class="center footer">Thank you for your business!</p>
+            <p class="center footer">CS Marketing - Your Pepsi Partner</p>
           </body>
         </html>
       `;
@@ -345,14 +433,16 @@ export default function BillingScreen() {
       if (finalCustomerId === 'NEW') {
          const routeName = routes.find((r: any) => String(r.id) === String(routeId))?.name || 'Walk-in Shop';
          const fallbackRoute = routes.find((r: any) => r.name.toLowerCase().includes('unassigned')) || routes[0];
+         const resolvedRouteId = routeId ? String(routeId) : (fallbackRoute?.id || null);
          const newCust = await createCustomer.mutateAsync({
            name: selectedCustomer.name,
-           phone: selectedCustomer.phone,
+           phone: selectedCustomer.phone || '',
            address: routeName,
-           routeId: routeId ? String(routeId) : (fallbackRoute ? fallbackRoute.id : ""),
-           creditBalance: 0
+           creditBalance: 0,
+           ...(resolvedRouteId ? { routeId: resolvedRouteId } : {}),
          });
-         finalCustomerId = newCust.id;
+         // Backend returns _id for MongoDB documents; fall back to id if present
+         finalCustomerId = newCust._id || newCust.id;
       }
 
       let result;
@@ -411,9 +501,10 @@ export default function BillingScreen() {
   ];
 
   const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const isTablet = SCREEN_WIDTH > 600;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
       <TouchableOpacity style={styles.customerBar} onPress={() => setCustomerModal(true)}>
         <Ionicons name="storefront" size={24} color={Colors.primary} style={{ marginRight: 12 }} />
         <View style={{ flex: 1 }}>
@@ -486,6 +577,9 @@ export default function BillingScreen() {
             <View key={group.cat} style={{ width: SCREEN_WIDTH, flex: 1 }}>
               <FlatList
                 data={products.filter((p: any) => p.category === group.cat)}
+                key={isTablet ? 'tablet' : 'phone'}
+                numColumns={isTablet ? 2 : 1}
+                columnWrapperStyle={isTablet ? { gap: 12 } : null}
                 keyExtractor={(item) => String(item.id)}
                 showsVerticalScrollIndicator={true}
                 keyboardShouldPersistTaps="handled"
@@ -756,7 +850,9 @@ export default function BillingScreen() {
 
                 return (
                   <View key={id} style={styles.cartItem}>
-                    <Text style={styles.cartItemName} numberOfLines={1}>{cases.toFixed(2)} {p?.name}</Text>
+                    <Text style={styles.cartItemName} numberOfLines={1}>
+                      {formatQty(qtyBtls, itemsPerCase)}  {p?.name}
+                    </Text>
                     <Text style={styles.cartItemAmt}>₹{Math.round(price * cases)}</Text>
                   </View>
                 );
@@ -850,28 +946,69 @@ export default function BillingScreen() {
                 </View>
               )}
               <View style={styles.receiptContentFixed}>
-                <Text style={[styles.receiptText, styles.receiptCenter, styles.receiptBold, {fontSize: 16}]}>CS MARKETING</Text>
-                <View style={styles.receiptDashedLine} />
-                <Text style={[styles.receiptText, styles.receiptCenter, styles.receiptBold]}>INVOICE</Text>
-                <Text style={[styles.receiptText, styles.receiptCenter]}>Order #{completedOrder?.orderNumber || completedOrder?._id || completedOrder?.id || 'N/A'}</Text>
-                <Text style={[styles.receiptText, styles.receiptCenter]}>{new Date(completedOrder?.date || Date.now()).toLocaleDateString()}</Text>
-                <View style={styles.receiptDashedLine} />
-                <Text style={styles.receiptText}>Shop Name - {completedOrder?.customer?.name || 'Walk-in Shop'}</Text>
-                <View style={styles.receiptDashedLine} />
-                <Text style={[styles.receiptText, styles.receiptBold]}>Items</Text>
-                
-                {completedOrder?.items?.map((item: any, idx: number) => (
-                  <View key={idx} style={styles.receiptItemRow}>
-                    <Text style={[styles.receiptText, {flex: 1}]}>{item.product?.name} x {item.isFree ? `${item.quantity}btls` : `${item.quantity}cs`}</Text>
-                    <Text style={[styles.receiptText, {textAlign: 'right'}]}>{item.isFree ? 'FREE' : `₹${Math.round((item.customPrice || item.product?.price || 0) * item.quantity)}`}</Text>
+                <View style={{ alignItems: 'center', marginBottom: 4 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+                    <View style={{ width: 30, height: 4, backgroundColor: '#fff', borderRadius: 2 }} />
                   </View>
-                ))}
+                </View>
+                <Text style={[styles.receiptText, styles.receiptCenter, {fontSize: 9, letterSpacing: 2, marginBottom: 2}]}>PEPSI</Text>
+                <Text style={[styles.receiptText, styles.receiptCenter, styles.receiptBold, {fontSize: 14}]}>CS MARKETING</Text>
+                <Text style={[styles.receiptText, styles.receiptCenter, {fontSize: 8, fontStyle: 'italic', marginBottom: 4}]}>Authorized Pepsi Distributor</Text>
+                <View style={styles.receiptDashedLine} />
+                <Text style={[styles.receiptText, {marginBottom: 2}]}>Invoice: <Text style={styles.receiptBold}>{completedOrder?.orderNumber || completedOrder?._id || completedOrder?.id || 'N/A'}</Text></Text>
+                <Text style={[styles.receiptText, {marginBottom: 2}]}>Date: {(() => { const d = new Date(completedOrder?.date || Date.now()); const ms = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${String(d.getDate()).padStart(2,'0')}-${ms[d.getMonth()]}-${d.getFullYear()}`; })()}</Text>
+                <Text style={[styles.receiptText, {marginBottom: 2}]}>Shop: <Text style={styles.receiptBold}>{completedOrder?.customer?.name || 'Walk-in Shop'}</Text></Text>
+                <View style={styles.receiptDashedLine} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4, borderBottomWidth: 1, borderBottomColor: '#ccc', paddingBottom: 3, borderStyle: 'dashed' }}>
+                  <Text style={[styles.receiptText, styles.receiptBold, {flex: 1}]}>Item</Text>
+                  <Text style={[styles.receiptText, styles.receiptBold, {width: 40, textAlign: 'center'}]}>Qty</Text>
+                  <Text style={[styles.receiptText, styles.receiptBold, {width: 45, textAlign: 'right'}]}>Rate</Text>
+                  <Text style={[styles.receiptText, styles.receiptBold, {width: 50, textAlign: 'right'}]}>Amt</Text>
+                </View>
+                
+                {(() => {
+                  const cons = new Map();
+                  (completedOrder?.items || []).forEach((item: any) => {
+                    const pid = String(item.product?._id || item.productId?._id || item.productId || item.product?.id || Math.random());
+                    const ipc = item.product?.itemsPerCase || 1;
+                    const btls = item.isFree ? item.quantity : Math.round(item.quantity * ipc);
+                    const rate = item.isFree ? 0 : (item.customPrice ?? item.product?.price ?? 0);
+                    const amt = item.isFree ? 0 : Math.round(rate * item.quantity);
+                    if (cons.has(pid)) {
+                      cons.get(pid).btls += btls;
+                      cons.get(pid).amt += amt;
+                    } else {
+                      cons.set(pid, { name: (item.product?.name || 'Item'), btls, amt, rate: Math.round(rate), ipc, isFree: item.isFree || false });
+                    }
+                  });
+                  return Array.from(cons.values())
+                    .filter((item: any) => {
+                      const nameLC = item.name.toLowerCase();
+                      if (item.isFree && (nameLC.includes('aquafina') || nameLC.includes('aqua fina'))) return false;
+                      return true;
+                    })
+                    .map((item: any, idx: number) => (
+                    <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={[styles.receiptText, styles.receiptBold, {flex: 1, fontSize: 9}]} numberOfLines={1}>{item.name}</Text>
+                      <Text style={[styles.receiptText, {width: 40, textAlign: 'center', fontSize: 9}]}>{formatQty(item.btls, item.ipc)}</Text>
+                      <Text style={[styles.receiptText, {width: 45, textAlign: 'right', fontSize: 9}]}>
+                        {item.isFree ? '-' : item.rate.toLocaleString('en-IN')}
+                      </Text>
+                      <Text style={[styles.receiptText, styles.receiptBold, {width: 50, textAlign: 'right', fontSize: 9}]}>
+                        {item.isFree ? 'FREE' : item.amt.toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                  ));
+                })()}
 
                 <View style={styles.receiptDashedLine} />
                 <View style={styles.receiptItemRow}>
-                  <Text style={[styles.receiptText, styles.receiptBold]}>Total</Text>
-                  <Text style={[styles.receiptText, styles.receiptBold]}>₹{completedOrder?.totalAmount}</Text>
+                  <Text style={[styles.receiptText, styles.receiptBold, {fontSize: 13}]}>TOTAL</Text>
+                  <Text style={[styles.receiptText, styles.receiptBold, {fontSize: 13}]}>{Math.round(completedOrder?.totalAmount || 0).toLocaleString('en-IN')}</Text>
                 </View>
+                <View style={styles.receiptDashedLine} />
+                <Text style={[styles.receiptText, styles.receiptCenter, {fontStyle: 'italic', fontSize: 8, marginTop: 4}]}>Thank you for your business!</Text>
+                <Text style={[styles.receiptText, styles.receiptCenter, {fontStyle: 'italic', fontSize: 8}]}>CS Marketing - Your Pepsi Partner</Text>
               </View>
             </View>
 
@@ -944,8 +1081,8 @@ const styles = StyleSheet.create({
   catTabTextActive: { color: '#fff' },
 
   products: { flex: 1 },
-  productCard: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: BorderRadius.xl, padding: Spacing.md, marginBottom: Spacing.md, borderWidth: 1, borderColor: '#E2E8F0', ...Shadows.sm },
-  productCardActive: { borderColor: Colors.primary + '60', backgroundColor: Colors.primaryBg },
+  productCard: { flex: 1, flexDirection: 'row', backgroundColor: '#fff', borderRadius: BorderRadius.xl, padding: Spacing.md, marginBottom: Spacing.md, borderWidth: 1, borderColor: '#E2E8F0', ...Shadows.sm },
+  productCardActive: { borderColor: Colors.primary + '60', backgroundColor: '#EEF2FF' },
   productImage: { width: 70, height: 70, borderRadius: BorderRadius.md, backgroundColor: '#F1F5F9' },
   imageColumn: { marginRight: Spacing.md, alignItems: 'center', width: 70, gap: 4 },
   priceRowUnder: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 4, paddingHorizontal: 4, height: 18, width: '100%', justifyContent: 'center' },
@@ -987,36 +1124,36 @@ const styles = StyleSheet.create({
   totalBadgeText: { fontSize: FontSize.md, fontWeight: '900', color: Colors.primary },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  bottomSheet: { backgroundColor: Colors.bgSurface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: Spacing.xl, borderWidth: 1, borderColor: Colors.border, maxHeight: '90%' },
-  modalTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.textPrimary, marginBottom: Spacing.lg },
-  modalSearch: { backgroundColor: Colors.bgInput, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.border, color: Colors.textPrimary, fontSize: FontSize.md, paddingHorizontal: Spacing.md, height: 44, marginBottom: Spacing.md },
-  customerOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  bottomSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: Spacing.xl, borderWidth: 1, borderColor: '#E2E8F0', maxHeight: '90%' },
+  modalTitle: { fontSize: FontSize.xl, fontWeight: '800', color: '#0F172A', marginBottom: Spacing.lg },
+  modalSearch: { backgroundColor: '#F8FAFC', borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#CBD5E1', color: '#0F172A', fontSize: FontSize.md, paddingHorizontal: Spacing.md, height: 44, marginBottom: Spacing.md },
+  customerOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
   custAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: Colors.primaryBg, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
   custAvatarText: { fontSize: FontSize.lg, fontWeight: '800', color: Colors.primary },
-  custName: { fontSize: FontSize.md, fontWeight: '600', color: Colors.textPrimary },
-  custPhone: { fontSize: FontSize.sm, color: Colors.textMuted },
-  noResults: { textAlign: 'center', color: Colors.textMuted, marginTop: 20 },
-  checkoutCustomer: { fontSize: FontSize.lg, color: Colors.primaryLight, marginBottom: Spacing.md },
+  custName: { fontSize: FontSize.md, fontWeight: '600', color: '#0F172A' },
+  custPhone: { fontSize: FontSize.sm, color: '#475569' },
+  noResults: { textAlign: 'center', color: '#94A3B8', marginTop: 20 },
+  checkoutCustomer: { fontSize: FontSize.lg, color: Colors.primary, marginBottom: Spacing.md },
   
-  cartItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  cartItemName: { flex: 1, fontSize: FontSize.sm, color: Colors.textSecondary },
-  cartItemAmt: { fontSize: FontSize.sm, fontWeight: '700', color: Colors.textPrimary },
+  cartItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  cartItemName: { flex: 1, fontSize: FontSize.sm, color: '#1E293B' },
+  cartItemAmt: { fontSize: FontSize.sm, fontWeight: '700', color: '#0F172A' },
   discountRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm },
   discountLabel: { fontSize: FontSize.sm, color: Colors.warning },
   discountAmt: { fontSize: FontSize.sm, color: Colors.warning, fontWeight: '700' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border, marginBottom: Spacing.lg },
-  totalLabel: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.textPrimary },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.md, borderTopWidth: 1, borderTopColor: '#E2E8F0', marginBottom: Spacing.lg },
+  totalLabel: { fontSize: FontSize.xl, fontWeight: '700', color: '#0F172A' },
   totalAmt: { fontSize: FontSize['2xl'], fontWeight: '900', color: Colors.primary },
-  payLabel: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.textSecondary, marginBottom: Spacing.sm },
-  payChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: Colors.border },
+  payLabel: { fontSize: FontSize.sm, fontWeight: '600', color: '#475569', marginBottom: Spacing.sm },
+  payChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: '#E2E8F0' },
   payChipActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryBg },
-  payChipText: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.textMuted },
+  payChipText: { fontSize: FontSize.sm, fontWeight: '600', color: '#475569' },
   splitRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
-  splitLabel: { width: 60, fontSize: FontSize.sm, color: Colors.textSecondary },
-  splitInput: { flex: 1, backgroundColor: Colors.bgInput, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Colors.border, color: Colors.textPrimary, paddingHorizontal: Spacing.md, height: 40, fontSize: FontSize.md },
+  splitLabel: { width: 60, fontSize: FontSize.sm, color: '#1E293B' },
+  splitInput: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: BorderRadius.md, borderWidth: 1, borderColor: '#CBD5E1', color: '#0F172A', paddingHorizontal: Spacing.md, height: 40, fontSize: FontSize.md },
   modalBtns: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  cancelBtn: { flex: 1, height: 46, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  cancelText: { color: Colors.textSecondary, fontWeight: '600' },
+  cancelBtn: { flex: 1, height: 46, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  cancelText: { color: '#475569', fontWeight: '600' },
   confirmBtn: { flex: 1, height: 46, borderRadius: BorderRadius.lg, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', ...Shadows.primary, marginTop: 10 },
   confirmText: { color: '#fff', fontWeight: '700' },
 

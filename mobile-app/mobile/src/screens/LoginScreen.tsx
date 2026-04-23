@@ -65,7 +65,7 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <LinearGradient
-      colors={['#0F172A', '#172554', '#0F172A']}
+      colors={['#F8FAFC', '#EFF6FF', '#F8FAFC']}
       style={styles.container}
     >
       {/* Background blobs */}
@@ -167,18 +167,6 @@ export default function LoginScreen({ navigation }: any) {
                 : <Text style={styles.loginBtnText}>Sign In</Text>
               }
             </TouchableOpacity>
-
-            {/* Hints */}
-            <View style={styles.hints}>
-              <View style={styles.hintCard}>
-                <Text style={styles.hintRole}>Admin</Text>
-                <Text style={styles.hintCred}>admin / admin123</Text>
-              </View>
-              <View style={styles.hintCard}>
-                <Text style={styles.hintRole}>Driver</Text>
-                <Text style={styles.hintCred}>driver / driver123</Text>
-              </View>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -191,12 +179,12 @@ const styles = StyleSheet.create({
   blob1: {
     position: 'absolute', top: '-10%', left: '-10%',
     width: '60%', height: '40%', borderRadius: 999,
-    backgroundColor: 'rgba(59,130,246,0.15)',
+    backgroundColor: 'rgba(59,130,246,0.08)',
   },
   blob2: {
     position: 'absolute', bottom: '5%', right: '5%',
     width: '50%', height: '40%', borderRadius: 999,
-    backgroundColor: 'rgba(99,102,241,0.1)',
+    backgroundColor: 'rgba(99,102,241,0.08)',
   },
   kav: { flex: 1 },
   scroll: {
@@ -213,45 +201,45 @@ const styles = StyleSheet.create({
   },
   logoTitle: {
     fontSize: FontSize['4xl'], fontWeight: '900',
-    color: Colors.textPrimary, letterSpacing: -1,
+    color: '#1E293B', letterSpacing: -1,
   },
-  logoBrand: { color: Colors.primaryLight },
+  logoBrand: { color: Colors.primary },
   logoSubtitle: {
-    fontSize: FontSize.sm, color: 'rgba(147,197,253,0.7)',
+    fontSize: FontSize.sm, color: '#64748B',
     marginTop: 4, fontWeight: '500',
   },
   card: {
     width: '100%', maxWidth: 400,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius['2xl'],
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: '#E2E8F0',
     padding: Spacing['2xl'],
-    ...Shadows.lg,
+    ...Shadows.md,
   },
-  cardTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.textPrimary },
-  cardSubtitle: { fontSize: FontSize.sm, color: Colors.textMuted, marginTop: 2, marginBottom: Spacing.xl },
+  cardTitle: { fontSize: FontSize.xl, fontWeight: '800', color: '#1E293B' },
+  cardSubtitle: { fontSize: FontSize.sm, color: '#64748B', marginTop: 2, marginBottom: Spacing.xl },
   fieldGroup: { marginBottom: Spacing.lg },
-  label: { fontSize: FontSize.sm, fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginBottom: 6 },
+  label: { fontSize: FontSize.sm, fontWeight: '600', color: '#475569', marginBottom: 6 },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: '#F8FAFC',
+    borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#E2E8F0',
     height: 50,
   },
   inputIcon: { marginLeft: Spacing.md },
   input: {
-    flex: 1, color: Colors.textPrimary, fontSize: FontSize.md,
+    flex: 1, color: '#1E293B', fontSize: FontSize.md,
     paddingHorizontal: Spacing.md, height: '100%',
   },
   eyeBtn: { paddingHorizontal: Spacing.md },
   errorBox: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.dangerBg,
-    borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Colors.danger + '40',
+    backgroundColor: '#FEF2F2',
+    borderRadius: BorderRadius.md, borderWidth: 1, borderColor: '#FECACA',
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     marginBottom: Spacing.md,
   },
-  errorText: { fontSize: FontSize.sm, color: Colors.danger, fontWeight: '500', flex: 1 },
+  errorText: { fontSize: FontSize.sm, color: '#EF4444', fontWeight: '500', flex: 1 },
   loginBtn: {
     height: 50, borderRadius: BorderRadius.lg, alignItems: 'center',
     justifyContent: 'center', backgroundColor: Colors.primary,
@@ -260,16 +248,17 @@ const styles = StyleSheet.create({
   loginBtnText: { color: '#fff', fontWeight: '800', fontSize: FontSize.lg },
   hints: {
     flexDirection: 'row', gap: 10, marginTop: Spacing.xl,
-    paddingTop: Spacing.lg, borderTopWidth: 1, borderTopColor: Colors.border,
+    paddingTop: Spacing.lg, borderTopWidth: 1, borderTopColor: '#E2E8F0',
   },
   hintCard: {
-    flex: 1, backgroundColor: 'rgba(255,255,255,0.05)',
+    flex: 1, backgroundColor: '#F8FAFC',
     borderRadius: BorderRadius.lg, padding: Spacing.md, alignItems: 'center',
+    borderWidth: 1, borderColor: '#F1F5F9'
   },
-  hintRole: { fontSize: FontSize.sm, fontWeight: '700', color: 'rgba(255,255,255,0.6)', marginBottom: 2 },
-  hintCred: { fontSize: FontSize.xs, color: Colors.textMuted },
+  hintRole: { fontSize: FontSize.sm, fontWeight: '700', color: '#475569', marginBottom: 2 },
+  hintCred: { fontSize: FontSize.xs, color: '#94A3B8' },
   rememberRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl, marginTop: -4 },
-  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center', marginRight: 8, backgroundColor: '#fff' },
   checkboxActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  rememberText: { fontSize: FontSize.sm, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
+  rememberText: { fontSize: FontSize.sm, color: '#475569', fontWeight: '500' },
 });

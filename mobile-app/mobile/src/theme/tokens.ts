@@ -16,10 +16,10 @@ export const Colors = {
   bgInput: 'rgba(255, 255, 255, 0.08)',
 
   // Text
-  textPrimary: '#FFFFFF',
-  textSecondary: 'rgba(255, 255, 255, 0.7)',
-  textMuted: 'rgba(255, 255, 255, 0.4)',
-  textAccent: '#60A5FA',
+  textPrimary: '#1E293B',    // Dark Slate (was White)
+  textSecondary: '#475569',  // Medium Slate (was Transparent White)
+  textMuted: '#94A3B8',      // Light Slate (was Transparent White)
+  textAccent: '#3B82F6',
 
   // Borders
   border: 'rgba(255, 255, 255, 0.12)',

@@ -1,7 +1,6 @@
 {
   "expo": {
     "name": "distrisys-mobile",
-    "slug": "distrisys-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -32,8 +31,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "19286e37-490e-443b-b258-6666d34e1172"
+        "projectId": "39dff2c7-47bb-4e57-8663-5b78a129da87"
       }
-    }
+    },
+    "owner": "anshulnaik"
   }
 }

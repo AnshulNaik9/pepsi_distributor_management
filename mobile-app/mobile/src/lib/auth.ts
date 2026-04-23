@@ -8,8 +8,8 @@ interface User {
 }
 
 const USERS: Record<string, { password: string; role: Role }> = {
-  admin: { password: 'admin123', role: 'admin' },
-  driver: { password: 'driver123', role: 'driver' },
+  admin: { password: '1968', role: 'admin' },
+  seller: { password: '1122', role: 'driver' },
 };
 
 const AUTH_KEY = 'app_auth';

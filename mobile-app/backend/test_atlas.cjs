@@ -1,16 +1,15 @@
 const mongoose = require('mongoose');
+require('dotenv').config();
 
-const uri = 'mongodb+srv://naikanshu9_db_user:Karwar%40123@cluster0.4axkjzl.mongodb.net/?appName=Cluster0';
-
-console.log('Connecting to MongoDB Atlas...');
+const uri = process.env.MONGODB_URI;
+console.log('Testing connection to:', uri.split('@')[1]); // Log part of URI for safety
 
 mongoose.connect(uri)
   .then(() => {
-    console.log('✅ SUCCESS: Connected to MongoDB Atlas Cluster0');
+    console.log('✅ SUCCESS: Connected to Cluster0!');
     process.exit(0);
   })
   .catch(err => {
-    console.error('❌ FAILURE: Could not connect to MongoDB Atlas');
-    console.error(err.message);
+    console.error('❌ ERROR: Could not connect to Cluster0:', err.message);
     process.exit(1);
   });

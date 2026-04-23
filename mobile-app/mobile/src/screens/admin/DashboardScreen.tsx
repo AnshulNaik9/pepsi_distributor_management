@@ -125,11 +125,11 @@ export default function AdminDashboard({ navigation }: any) {
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.grid}>
         <QuickActionCard 
-          title="Profit Pulse" 
-          desc="Business margins metrics" 
-          icon="trending-up" 
+          title="Truck and loading" 
+          desc="Manage truck inventory" 
+          icon="car" 
           color="emerald" 
-          onPress={() => navigation.navigate('AdminProfitPulse')}
+          onPress={() => navigation.navigate('AdminTrucks')}
         />
         <QuickActionCard 
           title="Bill History" 

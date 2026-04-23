@@ -11,6 +11,17 @@ const PAY_COLORS: Record<string, string> = {
   Cash: Colors.success, UPI: '#8B5CF6', Credit: Colors.danger, Split: Colors.warning,
 };
 
+function formatQty(totalBottles: number, itemsPerCase: number): string {
+  const ipc = itemsPerCase || 1;
+  const btls = Math.round(totalBottles);
+  const cs = Math.floor(btls / ipc);
+  const rem = btls % ipc;
+  if (cs > 0 && rem > 0) return `${cs}cs ${rem}btl`;
+  if (cs > 0) return `${cs}cs`;
+  if (rem > 0) return `${rem}btl`;
+  return '0';
+}
+
 export default function HistoryScreen() {
   const navigation = useNavigation<any>();
   const [truckId, setTruckId] = useState<string | null>(null);
@@ -29,34 +40,97 @@ export default function HistoryScreen() {
       const custName = orderData.customer?.name || 'Walk-in Shop';
       const orderId = orderData.orderNumber || orderData._id || orderData.id || 'N/A';
       
-      const itemRows = (orderData.items || []).map((item: any) => {
-        const qtyText = item.isFree ? `${item.quantity}btls` : `${item.quantity}cs`;
-        const name = item.product?.name || item.productName || 'Item';
-        const unitPrice = item.customPrice !== undefined ? item.customPrice : (item.product?.price || 0);
-        const amtText = item.isFree ? 'FREE' : `₹${Math.round(unitPrice * item.quantity)}`;
+      const consolidated = new Map();
+      (orderData.items || []).forEach((item: any) => {
+        const pid = String(item.product?._id || item.productId?._id || item.productId || item.product?.id || item.id || Math.random());
+        const ipc = item.product?.itemsPerCase || 1;
+        const btls = item.isFree ? item.quantity : Math.round(item.quantity * ipc);
+        const amt = item.isFree ? 0 : Math.round((item.customPrice ?? item.product?.price ?? 0) * item.quantity);
+        
+        if (consolidated.has(pid)) {
+          const ext = consolidated.get(pid);
+          ext.btls += btls;
+          ext.amt += amt;
+        } else {
+          consolidated.set(pid, {
+            name: (item.product?.name || item.productName || 'Item').substring(0, 16),
+            btls,
+            amt,
+            ipc
+          });
+        }
+      });
+
+      const itemRows = Array.from(consolidated.values()).map((item: any) => {
+        const qtyText = formatQty(item.btls, item.ipc);
+        const amtText = item.amt === 0 ? 'FREE' : item.amt;
 
         return `
-          <tr><td style="padding: 2px 0;">${name} x ${qtyText}</td><td style="text-align:right; padding: 2px 0;">${amtText}</td></tr>
-        `;
+        <tr>
+          <td style="padding:0.5mm 0; word-break:break-word; font-weight:bold;">${item.name}</td>
+          <td style="padding:0.5mm 0; text-align:center; white-space:nowrap; padding-left:1mm;">${qtyText}</td>
+          <td style="padding:0.5mm 0; text-align:right; white-space:nowrap; font-weight:bold; padding-left:1mm;">${amtText}</td>
+        </tr>`;
       }).join('');
 
+      const pepsiLogoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAACXBIWXMAAAsTAAALEwEAmpwYAAAC8UlEQVR4nO2a2W3CQBBFzxUogpACEyVAVIAUmgITIEpA1EBUAKEAogSiBExv9uX4wxh7/Uv2k0bjL57H1lpnxlgsy7L8w1iWwZim+S2l3IloW0Rvxpi1iNbOub2I1iLajuO4+S84mCMAQwhrEX0655r1eh1TylsRnYnoUUrZ+b7P1R9B/KGUcyJaFkXR53leGGOenHMXEQ0i2lRVte/7/j3n3H36+oT71wDAyxgjURTd2ra9s3a3250ZY6Yp5W269mF8LwMAz4vFwj0AUErpiOhdluWH9D3M62i1WhUAwMvl8vH3Xde1AOBqmmYZY5zP0QEA3FqW5QAAyvO8W1/yEABA7DhuBwA0hmHcpmv+k1sAAEVR5AEAjWEYL+mam3LzGQDQarXKAABd172lO1zJTQ4AUJZlDgBomiYCAOR5/pS+w1RuHwEAjGEYeQAA27YfAAB93w8AgDzPMwEAJc/zHADA9/3u7Xb7nO/B1V3z3S0A0O12KwAATdMaAAAsy3oEAFiWdZ3vQdXfR9g4jmMAQDMMwwAA+L7fAABYlnWd70F1/0eI/X6/AABwHMcEAJim2QAAWJYV53tQNfcRYlVVPQAARVGMAABlWdYAAIwxzvfgau4jxLZtGwAARVH0AABlWdYAAIqiqPId/L9xHiGGYRgAAIqiGAMAsizrEQBQFEWd70HV3EeIRVFUAABVVTUAAFVVNQAARVHke1A19xFi13UNAEBVVQ8AQFVVDQBAURSZ70HV3EeIdV03AABVVU0AQFVVNQAARVHk+T+smnsLsf7+/v42Xf/T20d4R18fBfcdR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dH53/H8/n8V5+RkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZH5s3wBM72u1/v6GvUAAAAASUVORK5CYII=";
+
       const htmlContent = `
-        <html><head><meta name="viewport" content="width=device-width, initial-scale=1.0" /><style>
-          @page { size: 50.8mm auto; margin: 0; }
-          body { margin: 0; padding: 2mm; font-family: monospace; font-size: 10px; line-height: 1.1; }
-          .bold { font-weight: 700; } .center { text-align: center; }
-          .line { border-top: 1px dashed #ccc; margin: 4px 0; }
-          table { width: 100%; border-collapse: collapse; }
-        </style></head>
-        <body>
-          <div class="center bold" style="font-size:12px;">CS MARKETING</div>
-          <div class="line"></div><div class="center bold">INVOICE</div>
-          <div class="center">Order #${orderId}</div><div class="center">${dateStr}</div>
-          <div class="line"></div><div>Shop Name - ${custName}</div>
-          <div class="line"></div><div class="bold">Items</div>
-          <table>${itemRows}</table><div class="line"></div>
-          <div style="display:flex; justify-content:space-between; font-weight:700;"><span>Total</span><span>₹${orderData.totalAmount}</span></div>
-        </body></html>
+        <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+            <style>
+              @page { size: 48mm auto; margin: 0mm; }
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body {
+                width: 48mm;
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 7.5pt;
+                line-height: 1.2;
+                color: #000;
+                padding: 1mm 2mm;
+              }
+              .center { text-align: center; }
+              .right { text-align: right; }
+              .bold { font-weight: bold; }
+              .lg { font-size: 9pt; }
+              .sm { font-size: 6.5pt; }
+              .divider { border-top: 1px dashed #000; margin: 1.5mm 0; }
+              .solid { border-top: 1px solid #000; margin: 1.5mm 0; }
+              .row { display: flex; justify-content: space-between; }
+              .row .name { flex: 1; padding-right: 2mm; word-break: break-word; }
+              .row .amt { white-space: nowrap; }
+              .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 8.5pt; }
+            </style>
+          </head>
+          <body>
+            <div class="center">
+              <img src="${pepsiLogoBase64}" alt="Pepsi" style="width:24mm; height:24mm; margin-bottom:2mm;" />
+            </div>
+            <p class="center bold lg">CS MARKETING</p>
+            <p class="center sm">Karwar, Karnataka</p>
+            <div class="divider"></div>
+            <p class="center bold">INVOICE</p>
+            <p class="center">Order #${orderId}</p>
+            <p class="center">${dateStr}</p>
+            <div class="divider"></div>
+            <p>Shop: <b>${custName}</b></p>
+            <div class="divider"></div>
+            <p class="bold">Items:</p>
+            <table style="width:100%; border-collapse:collapse; font-size:7.5pt;">
+              ${itemRows}
+            </table>
+            <div class="solid"></div>
+            <div class="total-row">
+              <span>TOTAL</span>
+              <span>Rs.${Math.round(orderData.totalAmount)}</span>
+            </div>
+            <div class="divider"></div>
+            <p class="center sm">Thank You!</p>
+            <p class="center sm">Visit Again</p>
+            <br/><br/>
+          </body>
+        </html>
       `;
       await Print.printAsync({ html: htmlContent });
     } catch (error) { Alert.alert('Print Error', 'Could not generate receipt'); }
@@ -165,13 +239,18 @@ export default function HistoryScreen() {
                   </View>
                 </View>
                 <View style={styles.itemsRow}>
-                  {(item.items || []).slice(0, 3).map((it: any, idx: number) => (
-                    <View key={idx} style={styles.itemChip}>
-                      <Text style={styles.itemChipText} numberOfLines={1}>
-                        {it.isFree ? '🎁' : ''}{it.product?.name} ×{it.quantity}
-                      </Text>
-                    </View>
-                  ))}
+                  {(item.items || []).slice(0, 3).map((it: any, idx: number) => {
+                    const ipc = it.product?.itemsPerCase || 1;
+                    const totalBtls = it.isFree ? it.quantity : Math.round(it.quantity * ipc);
+                    const qtyStr = it.isFree ? `${it.quantity}btl` : formatQty(totalBtls, ipc);
+                    return (
+                      <View key={idx} style={styles.itemChip}>
+                        <Text style={styles.itemChipText} numberOfLines={1}>
+                          {it.isFree ? '🎁' : ''}{it.product?.name} ×{qtyStr}
+                        </Text>
+                      </View>
+                    );
+                  })}
                   {(item.items || []).length > 3 && (
                     <View style={styles.itemChip}><Text style={styles.itemChipText}>+{item.items.length - 3}</Text></View>
                   )}
@@ -219,17 +298,32 @@ export default function HistoryScreen() {
               </View>
 
               <Text style={styles.sectionHeader}>Items</Text>
-              {(selectedOrder?.items || []).map((it: any, idx: number) => (
-                <View key={idx} style={styles.itemDetail}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.itemName}>{it.product?.name || it.productName}</Text>
-                    <Text style={styles.itemQty}>{it.isFree ? `${it.quantity} Bottles` : `${it.quantity} Cases`}</Text>
+              {(() => {
+                const cons = new Map();
+                (selectedOrder?.items || []).forEach((it: any) => {
+                  const pid = String(it.product?._id || it.productId?._id || it.productId || it.product?.id || Math.random());
+                  const ipc = it.product?.itemsPerCase || 1;
+                  const btls = it.isFree ? it.quantity : Math.round(it.quantity * ipc);
+                  const amt = it.isFree ? 0 : Math.round((it.customPrice ?? it.product?.price ?? 0) * it.quantity);
+                  if (cons.has(pid)) {
+                    cons.get(pid).btls += btls;
+                    cons.get(pid).amt += amt;
+                  } else {
+                    cons.set(pid, { name: it.product?.name || it.productName, btls, amt, ipc });
+                  }
+                });
+                return Array.from(cons.values()).map((it: any, idx: number) => (
+                  <View key={idx} style={styles.itemDetail}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.itemName}>{it.name}</Text>
+                      <Text style={styles.itemQty}>{formatQty(it.btls, it.ipc)}</Text>
+                    </View>
+                    <Text style={styles.itemPrice}>
+                      {it.amt === 0 ? 'FREE' : `₹${it.amt}`}
+                    </Text>
                   </View>
-                  <Text style={styles.itemPrice}>
-                    {it.isFree ? 'FREE' : `₹${Math.round((it.customPrice || it.product?.price || 0) * it.quantity)}`}
-                  </Text>
-                </View>
-              ))}
+                ));
+              })()}
             </ScrollView>
 
             <View style={styles.actionGrid}>

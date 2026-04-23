@@ -22,10 +22,10 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1, minHeight: '100%' }}>
       <SafeAreaProvider style={{ flex: 1 }}>
         <QueryClientProvider client={queryClient}>
-          <View style={{ flex: 1, backgroundColor: Colors.bgDark }}>
+          <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
             <AppNavigator />
           </View>
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

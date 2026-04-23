@@ -100,19 +100,15 @@ function AdminNavigator() {
         },
         drawerActiveTintColor: '#fff',
         drawerActiveBackgroundColor: '#4F46E5',
-        drawerInactiveTintColor: '#64748B',
+        drawerInactiveTintColor: '#000000',
         drawerLabelStyle: {
           fontWeight: '800',
           fontSize: 13,
-          marginLeft: -10,
-          color: '#1E293B', // Ensure visible labels
+          color: '#000000',
         },
         drawerItemStyle: {
           borderRadius: 8,
-          paddingHorizontal: 8,
-          marginVertical: 0,
-          height: 38,
-          justifyContent: 'center',
+          marginVertical: 2,
         }
       }}
     >
@@ -252,8 +248,8 @@ function DriverTabNavigator({ navigation }: any) {
         tabBarShowLabel: true,
         tabBarLabelPosition: 'below-icon',
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: '#64748B',
-        tabBarLabelStyle: { fontSize: 13, fontWeight: '700', paddingBottom: 4 },
+        tabBarInactiveTintColor: '#334155', // Darker slate for visibility
+        tabBarLabelStyle: { fontSize: 13, fontWeight: '800', paddingBottom: 4 },
         tabBarIconStyle: { marginTop: 4 },
       })}
     >

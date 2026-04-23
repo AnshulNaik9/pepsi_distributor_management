@@ -224,8 +224,8 @@ export default function TrucksScreen() {
                     <View style={styles.stockInfoCol}>
                       <Text style={styles.stockName} numberOfLines={1}>{prod?.name || 'Product'}</Text>
                       <View style={styles.stockBadgeContainer}>
-                        <View style={[styles.stockBadge, { backgroundColor: Colors.bgInput }]}>
-                          <Ionicons name="business-outline" size={12} color={Colors.textSecondary} />
+                        <View style={[styles.stockBadge, { backgroundColor: '#F8FAFC' }]}>
+                          <Ionicons name="business-outline" size={12} color="#64748B" />
                           <Text style={styles.stockBadgeLabel}>{'Godown: '}</Text>
                           <Text style={styles.stockValue}>{formatStock(s.casesAvailable, ipc)}</Text>
                         </View>
@@ -252,12 +252,12 @@ export default function TrucksScreen() {
                           const current = Number(loadQtys[pId] || 0);
                           if (current > 0) setLoadQtys(p => ({ ...p, [pId]: String(current - 1) }));
                         }}>
-                        <Ionicons name="remove" size={18} color={Colors.textPrimary} />
+                        <Ionicons name="remove" size={18} color="#1E293B" />
                       </TouchableOpacity>
                       <TextInput
                         style={styles.qtyInputStepper}
                         placeholder="0"
-                        placeholderTextColor={Colors.textMuted}
+                        placeholderTextColor="#94A3B8"
                         keyboardType="numeric"
                         value={String(loadQtys[pId] || '')}
                         onChangeText={t => setLoadQtys(p => ({ ...p, [pId]: t }))}
@@ -268,7 +268,7 @@ export default function TrucksScreen() {
                           const current = Number(loadQtys[pId] || 0);
                           setLoadQtys(p => ({ ...p, [pId]: String(current + 1) }));
                         }}>
-                        <Ionicons name="add" size={18} color={Colors.textPrimary} />
+                        <Ionicons name="add" size={18} color="#1E293B" />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -288,7 +288,7 @@ export default function TrucksScreen() {
         <View style={styles.overlay}>
           <View style={[styles.bottomSheet, { alignSelf: 'center', width: '90%', marginBottom: 'auto', marginTop: 'auto' }]}>
             <Text style={styles.modalTitle}>Delete Truck</Text>
-            <Text style={{ marginTop: 10, marginBottom: 24, fontSize: 16, color: Colors.textPrimary }}>
+            <Text style={{ marginTop: 10, marginBottom: 24, fontSize: 16, color: '#1E293B' }}>
               Are you sure you want to delete <Text style={{fontWeight:'700'}}>{deleteId?.vehicleNumber}</Text>? 
               {`\n\nAny stock currently on this truck will be automatically returned to the godown.`}
             </Text>
@@ -323,28 +323,28 @@ const styles = StyleSheet.create({
   header: { backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   backBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9' },
   pageTitle: { fontSize: 18, fontWeight: '900', color: '#1E293B' },
-  card: { backgroundColor: Colors.bgSurface, borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.border, ...Shadows.sm },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, borderWidth: 1, borderColor: '#E2E8F0', ...Shadows.sm },
   cardTop: { flexDirection: 'row', alignItems: 'center' },
-  truckIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: Colors.primaryBg, alignItems: 'center', justifyContent: 'center' },
-  vehicleNo: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.textPrimary },
-  driverName: { fontSize: FontSize.sm, color: Colors.textMuted, marginTop: 2 },
-  deleteBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: Colors.dangerBg, alignItems: 'center', justifyContent: 'center' },
+  truckIcon: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' },
+  vehicleNo: { fontSize: FontSize.lg, fontWeight: '700', color: '#1E293B' },
+  driverName: { fontSize: FontSize.sm, color: '#64748B', marginTop: 2 },
+  deleteBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: Spacing.md },
-  loadBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.border },
+  loadBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#E2E8F0' },
   loadBtnText: { fontSize: FontSize.sm, fontWeight: '600' },
   empty: { alignItems: 'center', paddingVertical: 60, opacity: 0.5 },
-  emptyText: { color: Colors.textMuted, marginTop: 12, fontSize: FontSize.md },
+  emptyText: { color: '#94A3B8', marginTop: 12, fontSize: FontSize.md },
   fab: { position: 'absolute', bottom: 24, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', ...Shadows.primary },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  bottomSheet: { backgroundColor: Colors.bgSurface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: Spacing.xl, borderWidth: 1, borderColor: Colors.border },
-  modalTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.textPrimary, marginBottom: Spacing.xl },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  bottomSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: Spacing.xl, borderWidth: 1, borderColor: '#E2E8F0' },
+  modalTitle: { fontSize: FontSize.xl, fontWeight: '800', color: '#1E293B', marginBottom: Spacing.xl },
   fieldGroup: { marginBottom: Spacing.lg },
-  fieldLabel: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.textSecondary, marginBottom: 6 },
-  fieldInput: { backgroundColor: Colors.bgInput, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.border, color: Colors.textPrimary, fontSize: FontSize.md, paddingHorizontal: Spacing.md, height: 46 },
-  stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border, gap: 12 },
-  modalProductImg: { width: 50, height: 50, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
+  fieldLabel: { fontSize: FontSize.sm, fontWeight: '600', color: '#64748B', marginBottom: 6 },
+  fieldInput: { backgroundColor: '#F8FAFC', borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#E2E8F0', color: '#1E293B', fontSize: FontSize.md, paddingHorizontal: Spacing.md, height: 46 },
+  stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', gap: 12 },
+  modalProductImg: { width: 50, height: 50, borderRadius: 8, backgroundColor: '#F1F5F9' },
   stockInfoCol: { flex: 1, paddingRight: Spacing.sm },
-  stockName: { fontSize: FontSize.md, fontWeight: '700', color: Colors.textPrimary, marginBottom: 6 },
+  stockName: { fontSize: FontSize.md, fontWeight: '700', color: '#1E293B', marginBottom: 6 },
   stockBadgeContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   stockBadge: { 
     flexDirection: 'row', 
@@ -353,17 +353,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4, 
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
   },
-  stockBadgeLabel: { fontSize: 10, fontWeight: '600', color: Colors.textSecondary },
-  stockValue: { fontSize: 10, fontWeight: '700', color: Colors.textPrimary },
-  qtyInput: { width: 60, backgroundColor: Colors.bgInput, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Colors.border, color: Colors.textPrimary, textAlign: 'center', fontSize: FontSize.md, height: 38 },
-  qtyContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: Colors.border, borderRadius: BorderRadius.md, backgroundColor: Colors.bgInput },
+  stockBadgeLabel: { fontSize: 10, fontWeight: '600', color: '#64748B' },
+  stockValue: { fontSize: 10, fontWeight: '700', color: '#1E293B' },
+  qtyInput: { width: 60, backgroundColor: '#F8FAFC', borderRadius: BorderRadius.md, borderWidth: 1, borderColor: '#E2E8F0', color: '#1E293B', textAlign: 'center', fontSize: FontSize.md, height: 38 },
+  qtyContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: BorderRadius.md, backgroundColor: '#F8FAFC' },
   stepperBtn: { width: 32, height: 38, alignItems: 'center', justifyContent: 'center' },
-  qtyInputStepper: { width: 44, color: Colors.textPrimary, textAlign: 'center', fontSize: FontSize.md, height: 38, borderLeftWidth: 1, borderRightWidth: 1, borderColor: Colors.border },
+  qtyInputStepper: { width: 44, color: '#1E293B', textAlign: 'center', fontSize: FontSize.md, height: 38, borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#E2E8F0' },
   modalBtns: { flexDirection: 'row', gap: 10, marginTop: Spacing.xl },
-  cancelBtn: { flex: 1, height: 46, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  cancelText: { color: Colors.textSecondary, fontWeight: '600' },
+  cancelBtn: { flex: 1, height: 46, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
+  cancelText: { color: '#64748B', fontWeight: '600' },
   confirmBtn: { flex: 1, height: 46, borderRadius: BorderRadius.lg, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', ...Shadows.primary },
   confirmText: { color: '#fff', fontWeight: '700' },
   unloadAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#EFF6FF', borderRadius: BorderRadius.md, borderWidth: 1, borderColor: '#BFDBFE' },

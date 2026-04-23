@@ -65,7 +65,7 @@ router.post('/checkout', async (req, res) => {
         globalPromoCases += item.quantity;
       }
     }
-    let globalFreeBottlesToAward = Math.floor(globalPromoCases) * 2;
+    let globalFreeBottlesToAward = Math.floor(globalPromoCases + 0.001) * 2;
 
     for (const item of items) {
       const product = productMap.get(item.productId);
@@ -88,7 +88,7 @@ router.post('/checkout', async (req, res) => {
 
       for (const offer of activeOffers) {
         if (offer.buyProductId.toString() === item.productId && item.quantity >= offer.buyQuantity) {
-          const offerMultiplier = Math.floor(item.quantity / offer.buyQuantity);
+          const offerMultiplier = Math.floor(item.quantity / offer.buyQuantity + 0.001);
           const quantityFromOffer = offerMultiplier * offer.freeQuantity;
           if (quantityFromOffer > freeQtyFromOffers) {
             freeQtyFromOffers = quantityFromOffer;
@@ -254,6 +254,34 @@ router.patch('/:id', async (req, res) => {
     const finalItems = [];
     const stockDeductions = new Map();
 
+    // Pre-calculate global promo cases for mixed cases
+    let globalPromoCases = 0;
+    for (const item of items) {
+      if (item.customFreeQty !== undefined) continue;
+      const product = productMap.get(item.productId);
+      if (!product) continue;
+      
+      let hasExplicitOffer = false;
+      for (const offer of activeOffers) {
+        if (offer.buyProductId.toString() === item.productId && item.quantity >= offer.buyQuantity) {
+          hasExplicitOffer = true; break;
+        }
+      }
+      if (hasExplicitOffer) continue;
+
+      const prodName = product.name.toLowerCase();
+      const promoCat = (product.category || 'others').toLowerCase().trim();
+      const isPromo = prodName.includes('2.25') || prodName.includes('750') || promoCat === '2_25_ltr' || promoCat === '750_ml';
+      const isExcluded = (prodName.includes('soda') && prodName.includes('2.25')) ||
+        (prodName.includes('pepsi') && prodName.includes('1') && (prodName.includes('ltr') || prodName.includes('1l'))) ||
+        (prodName.includes('lehar') && prodName.includes('soda') && prodName.includes('750'));
+
+      if (isPromo && !isExcluded) {
+        globalPromoCases += item.quantity;
+      }
+    }
+    let globalFreeBottlesToAward = Math.floor(globalPromoCases + 0.001) * 2;
+
     for (const item of items) {
       const product = productMap.get(item.productId);
       if (!product) throw new Error(`Product ${item.productId} not found`);
@@ -267,18 +295,44 @@ router.patch('/:id', async (req, res) => {
       let freeProductId = null;
       for (const offer of activeOffers) {
         if (offer.buyProductId.toString() === item.productId && item.quantity >= offer.buyQuantity) {
-          const mult = Math.floor(item.quantity / offer.buyQuantity);
+          const mult = Math.floor(item.quantity / offer.buyQuantity + 0.001);
           const qty = mult * offer.freeQuantity;
           if (qty > freeQtyFromOffers) freeQtyFromOffers = qty;
           freeProductId = offer.freeProductId.toString();
         }
       }
-      const totalFreeQty = item.customFreeQty !== undefined ? item.customFreeQty : freeQtyFromOffers;
-      if (totalFreeQty > 0 && freeProductId) {
-        const fProduct = allProducts.find(p => p._id.toString() === freeProductId);
-        const packing = fProduct?.itemsPerCase > 0 ? fProduct.itemsPerCase : 1;
-        finalItems.push({ productId: freeProductId, quantity: Math.round(totalFreeQty), isFree: true });
-        stockDeductions.set(freeProductId, (stockDeductions.get(freeProductId) || 0) + totalFreeQty / packing);
+      
+      let totalFreeQty = 0;
+      if (item.customFreeQty !== undefined) {
+        totalFreeQty = item.customFreeQty;
+      } else if (freeQtyFromOffers > 0) {
+        totalFreeQty = freeQtyFromOffers;
+      } else {
+        const prodName = (product?.name || '').toLowerCase();
+        const promoCat = (product?.category || 'others').toLowerCase().trim();
+        const isPromo = prodName.includes('2.25') || prodName.includes('750') || promoCat === '2_25_ltr' || promoCat === '750_ml';
+        const isExcluded = (prodName.includes('soda') && prodName.includes('2.25')) ||
+          (prodName.includes('pepsi') && prodName.includes('1') && (prodName.includes('ltr') || prodName.includes('1l'))) ||
+          (prodName.includes('lehar') && prodName.includes('soda') && prodName.includes('750'));
+        if (isPromo && !isExcluded) {
+          if (globalFreeBottlesToAward > 0) {
+            totalFreeQty = globalFreeBottlesToAward;
+            globalFreeBottlesToAward = 0;
+          }
+        }
+      }
+
+      if (totalFreeQty > 0) {
+        if (!freeProductId) {
+          const aquafina = allProducts.find(p => p.name.toLowerCase().includes('aquafina'));
+          freeProductId = aquafina?._id.toString();
+        }
+        if (freeProductId) {
+          const fProduct = allProducts.find(p => p._id.toString() === freeProductId);
+          const packing = fProduct?.itemsPerCase && fProduct.itemsPerCase > 0 ? fProduct.itemsPerCase : 1;
+          finalItems.push({ productId: freeProductId, quantity: Math.round(totalFreeQty), isFree: true });
+          stockDeductions.set(freeProductId, (stockDeductions.get(freeProductId) || 0) + totalFreeQty / packing);
+        }
       }
     }
 
